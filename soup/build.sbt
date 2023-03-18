@@ -1,6 +1,6 @@
 scalaVersion := "2.12.13"
 version := "0.0.1"
-name := "sampling"
+name := "soup"
 organization := "conviva"
 
 libraryDependencies ++= List(
