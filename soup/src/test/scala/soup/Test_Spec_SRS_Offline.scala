@@ -33,12 +33,12 @@ class DataSuite extends munit.FunSuite {
       .collect.map(_.getInt(0).toDouble)
     val lt200k = dat.select(col("lt200k"))
       .collect.map(_.getInt(0).toDouble)
-    val dacres92 = DenseVector(acres92)
-    val dlt200k = DenseVector(lt200k)
     val fpc = Array.fill(n)(N)
     val pweights = Array.fill(n)(N/n)
 
     // val id  = List.range(1, n + 1)
+    // val dacres92 = DenseVector(acres92)
+    // val dlt200k = DenseVector(lt200k)
     // val strata = DenseVector.ones[Int](n)
     // val pweights = DenseVector.fill(n){ N/n.toDouble }
     // val prob = 1.0 / pweights
