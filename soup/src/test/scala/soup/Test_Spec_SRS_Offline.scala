@@ -73,32 +73,33 @@ class DataSuite extends munit.FunSuite {
       assertEquals((t2(1) * 100).round.toDouble/100, 0.56)
     }
 
-  val dpath = "./src/test/data/pbssHourlyTest-c000.snappy.parquet"
-  val popData = spark.read.parquet(dpath)
-  val N = popData.count.toDouble // 10409
-  popData.select(
-    sum(col("justEnded")), avg(col("justEnded")),
-    sum(col("joinTimeSec")), avg(col("joinTimeSec")))
-      .show()
-  // 9544 and 18098.669
+    val strdat = spark.read
+      .option("inferSchema", "true")
+      .option("header", "true")
+      .csv(s"$path/agstrat.csv")
+      .withColumn("lt200k",
+        when(col("acres92") < 2e5, 1).otherwise(0))
+      .withColumn("popsize", 
+        when(col("region") === "NE", 220)
+        .when(col("region") === "NC", 1053)
+        .when(col("region") === "S", 1382)
+        .when(col("region") === "W", 422))
+    strdat.groupBy("popsize").agg(count("*")).show()
 
-  val sampData = popData.sample(0.2, 900600)
-  val jTimeSec = sampData.select("joinTimeSec")
-    .collect.map(_.getDouble(0))
-  val justEnded = sampData.select("justEnded")
-    .collect.map(_.getInt(0).toDouble)
-  val n = sampData.count.toInt
-  val pweights = Array.fill(n)(N/n)
-  val fpc = Array.fill(n)(N)
-  val dsrs = svydesign(jTimeSec, weights = pweights, fpc = fpc )
-  dsrs.estimate("svymean")
-  dsrs.estimate("svytotal")
-  dsrs.confint("svytotal")
-  dsrs.confint("svymean")
-  val lsrs = svydesign(justEnded, weights = pweights, fpc = fpc )
-  lsrs.estimate("svymean")
-  lsrs.confint("svymean")
-  lsrs.estimate("svytotal")
+    val dstr = svydesign(id = ~, strata = ~region, weights = pweights, fpc = fpc)
+    val n = dat.count.toInt
+    val N: Double = 3078
+    val dat1 = dat
+    val acres92 = dat.select(col("acres92"))
+      .collect.map(_.getInt(0).toDouble)
+    val lt200k = dat.select(col("lt200k"))
+      .collect.map(_.getInt(0).toDouble)
+    val dacres92 = DenseVector(acres92)
+    val dlt200k = DenseVector(lt200k)
+    val fpc = Array.fill(n)(N)
+    val pweights = Array.fill(n)(N/n)
+
+
 }
 
 // spark-shell --jars /Users/avandormael/Documents/ConvivaRepos/sampling/soup/target/scala-2.12/soup_2.12-0.0.1.jar,/Users/avandormael/Documents/ConvivaRepos/surgeon/surgeon/target/scala-2.12/surgeon_2.12-0.0.2.jar,/Users/avandormael/Workspace/jars/rscala_2.12-3.2.19.jar

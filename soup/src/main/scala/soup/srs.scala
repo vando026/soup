@@ -3,7 +3,7 @@ package conviva.soup
 import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
 
-object SRS {
+object Design {
   case class svydesign(y: Array[Double], weights: Array[Double], fpc: Array[Double]) {
     val R = org.ddahl.rscala.RClient()
     val lib = "library(survey);"
@@ -31,3 +31,16 @@ object SRS {
     }
   }
 }
+
+class SvyDesign(val y: Array[Double], ids: Array[Double],
+  stratas: Array[Double], weights: Array[Double], fpc: Array[Double]) {}
+object SvyDesign {
+  def apply(y: Array[Double], weights: Array[Double], fpc: Array[Double]): String = {
+    "this is it" 
+  }
+  // val df =  "dat <- data.frame(y = %-, strata = %-, sampwt = %-, fpc = %-);"
+  // val design = "dstr <- svydesign(id = ~1, strata = ~stratas, weights = ~sampwt, fpc = ~fpc, data = dat);"
+}
+
+val tt = svydesign(y = Array(2.0), weights = Array(8.0), fpc = Array(7.9))
+tt

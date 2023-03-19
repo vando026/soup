@@ -37,3 +37,29 @@ val dat = spark.read.parquet(path)
 
 dat.write.parquet("/mnt/conviva-dev-convivaid0/users/avandormael/data/pbssHourlyTest.parquet")
 
+val dpath = "./src/test/data/pbssHourlyTest-c000.snappy.parquet"
+val popData = spark.read.parquet(dpath)
+val N = popData.count.toDouble // 10409
+popData.select(
+  sum(col("justEnded")), avg(col("justEnded")),
+  sum(col("joinTimeSec")), avg(col("joinTimeSec")))
+    .show()
+// 9544 and 18098.669
+
+val sampData = popData.sample(0.2, 900600)
+val jTimeSec = sampData.select("joinTimeSec")
+  .collect.map(_.getDouble(0))
+val justEnded = sampData.select("justEnded")
+  .collect.map(_.getInt(0).toDouble)
+val n = sampData.count.toInt
+val pweights = Array.fill(n)(N/n)
+val fpc = Array.fill(n)(N)
+val dsrs = svydesign(jTimeSec, weights = pweights, fpc = fpc )
+dsrs.estimate("svymean")
+dsrs.estimate("svytotal")
+dsrs.confint("svytotal")
+dsrs.confint("svymean")
+val lsrs = svydesign(justEnded, weights = pweights, fpc = fpc )
+lsrs.estimate("svymean")
+lsrs.confint("svymean")
+lsrs.estimate("svytotal")
