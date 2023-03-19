@@ -14,3 +14,4 @@ publishArtifact := false
 testFrameworks += TestFramework("munit.TestFramework")
 logLevel := Level.Warn
 
+unmanagedBase := new java.io.File("/Users/avandormael/miniconda3/envs/dbconnect/lib/python3.9/site-packages/pyspark/jars")
