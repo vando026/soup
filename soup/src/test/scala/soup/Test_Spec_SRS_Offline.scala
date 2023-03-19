@@ -4,7 +4,7 @@ import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
 // import breeze.linalg._
 // import breeze.numerics._
-import conviva.soup.SRS._
+import conviva.soup.Design.{Simple, Stratified}
 
 class DataSuite extends munit.FunSuite {
 
@@ -14,6 +14,8 @@ class DataSuite extends munit.FunSuite {
     .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
+
+    val R = org.ddahl.rscala.RClient()
 
     val path = "./src/test/data"
 
@@ -28,16 +30,15 @@ class DataSuite extends munit.FunSuite {
 
     val n = dat.count.toInt
     val N: Double = 3078
-    val dat1 = dat
     val acres92 = dat.select(col("acres92"))
       .collect.map(_.getInt(0).toDouble)
     val lt200k = dat.select(col("lt200k"))
       .collect.map(_.getInt(0).toDouble)
-    val dacres92 = DenseVector(acres92)
-    val dlt200k = DenseVector(lt200k)
     val fpc = Array.fill(n)(N)
     val pweights = Array.fill(n)(N/n)
 
+    // val dacres92 = DenseVector(acres92)
+    // val dlt200k = DenseVector(lt200k)
     // val id  = List.range(1, n + 1)
     // val strata = DenseVector.ones[Int](n)
     // val pweights = DenseVector.fill(n){ N/n.toDouble }
@@ -45,10 +46,9 @@ class DataSuite extends munit.FunSuite {
     // val psum = sum(pweights)
     // val ave = sum(x * pweights/psum)
 
-    val R = org.ddahl.rscala.RClient()
 
     test("Agsrs means should be expected") {
-      val dsrs = svydesign(acres92, weights = pweights, fpc = fpc )
+      val dsrs = Simple(acres92, weights = pweights, fpc = fpc )
       val t0 = dsrs.estimate("svymean").map(_.toInt)
       val t1 = dsrs.confint("svymean").map(_.toInt)
       val t2 = dsrs.estimate("svytotal").map(_.toInt)
@@ -64,7 +64,7 @@ class DataSuite extends munit.FunSuite {
     }
 
     test("Agsrs props should be expected") {
-      val ltsrs = svydesign(lt200k, weights = pweights, fpc = fpc)
+      val ltsrs = Simple(lt200k, weights = pweights, fpc = fpc)
       val t1 = ltsrs.estimate("svymean")
       val t2 = ltsrs.confint("svymean")
       assertEquals(t1(0), 0.51)
@@ -86,18 +86,40 @@ class DataSuite extends munit.FunSuite {
         .when(col("region") === "W", 422))
     strdat.groupBy("popsize").agg(count("*")).show()
 
-    val dstr = svydesign(id = ~, strata = ~region, weights = pweights, fpc = fpc)
-    val n = dat.count.toInt
-    val N: Double = 3078
-    val dat1 = dat
-    val acres92 = dat.select(col("acres92"))
+    val strata = strdat.select(col("region"))
+      .collect.map(_.getString(0))
+    val stfpc = strdat.select(col("popsize"))
       .collect.map(_.getInt(0).toDouble)
-    val lt200k = dat.select(col("lt200k"))
+    val stpweights = strdat.select(col("strwt"))
+      .collect.map(_.getDouble(0))
+    val y = strdat.select(col("acres92"))
       .collect.map(_.getInt(0).toDouble)
-    val dacres92 = DenseVector(acres92)
-    val dlt200k = DenseVector(lt200k)
-    val fpc = Array.fill(n)(N)
-    val pweights = Array.fill(n)(N/n)
+
+    test("Agstr mean and total should be expected") {
+      val dstr = Stratified(y, strata, stpweights, stfpc)
+      val t0 = dstr.estimate("svymean").map(_.toInt)
+      val t1 = dstr.confint("svymean").map(_.toInt)
+      val t2 = dstr.estimate("svytotal").map(_.toInt)
+      val t3 = dstr.confint("svytotal").map(_.toInt)
+      assertEquals(t0(0), 295560)
+      assertEquals(t0(1), 16379)
+      assertEquals(t1(0), 263326)
+      assertEquals(t1(1), 327795)
+      assertEquals(t2(0), 909736035)
+      assertEquals(t2(1), 50416954)
+      assertEquals(t3(0), 810519015)
+      assertEquals(t3(1), 1008953055)
+    }
+
+    test("Agstr props should be expected") {
+      val ltstr = Stratified(lt200k, strata, stpweights, fpc)
+      val t1 = ltstr.estimate("svymean")
+      val t2 = ltstr.confint("svymean")
+      assertEquals(t1(0), 0.5103)
+      assertEquals(t1(1), 0.0282)
+      assertEquals((t2(0) * 1000).round.toDouble/1000, 0.455)
+      assertEquals((t2(1) * 1000).round.toDouble/1000, 0.566)
+    }
 
 
 }
