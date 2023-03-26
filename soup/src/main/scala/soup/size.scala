@@ -57,5 +57,14 @@ object Size {
     val n = a * pow(zscore, 2) * pu * qu / (pow(e, 2) + pow(zscore, 2) * pu * qu / (N - 1))
     n.ceil.toInt
   }
-
+  
+  def nNeyman(strata: List[String], n: Double, Nh: Array[Double], 
+      Sh: Array[Double]): Map[String, Double] = {
+    val N = Nh.reduce(_ + _).toDouble
+    val Wh = Nh.map(_ / N)
+    val denom = (Wh, Sh).zipped.map(_ * _).reduce(_ + _)
+    val numer = (Wh, Sh).zipped.map(_ * _).map(_ * n)
+    val nh = numer.map(_ / denom)
+    strata.zip(nh).toMap
+  }
 }
