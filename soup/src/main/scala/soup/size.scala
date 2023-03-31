@@ -58,13 +58,31 @@ object Size {
     n.ceil.toInt
   }
   
-  def nNeyman(strata: List[String], n: Double, Nh: Array[Double], 
-      Sh: Array[Double]): Map[String, Double] = {
+  case class nNeyman(strata: Array[String], n: Double, Nh: Array[Double], Sh: Array[Double]) {
     val N = Nh.reduce(_ + _).toDouble
     val Wh = Nh.map(_ / N)
     val denom = (Wh, Sh).zipped.map(_ * _).reduce(_ + _)
     val numer = (Wh, Sh).zipped.map(_ * _).map(_ * n)
-    val nh = numer.map(_ / denom)
-    strata.zip(nh).toMap
+    val smpsize = numer.map(_ / denom)
+    def nh(): Map[String, Double] = {
+      strata.zip(smpsize).toMap
+    }
+    def nfrac(): Map[String, Double] = {
+      val frac = (smpsize, Nh).zipped.map(_ / _)
+      strata.zip(frac).toMap
+    }
+  }
+
+  case class nPropAlloc(strata: Array[String], n: Double, Nh: Array[Double]) {
+    val N = Nh.reduce(_ + _).toDouble
+    val Wh = Nh.map(_ / N)
+    val nsmp = Wh.map(_ * n)
+    def nh(): Map[String, Double] = {
+      strata.zip(nsmp).toMap
+    }
+    def nfrac(): Map[String, Double] = {
+      val nfr = List.fill(Nh.length)(n/N)
+      strata.zip(nfr).toMap
+    }
   }
 }

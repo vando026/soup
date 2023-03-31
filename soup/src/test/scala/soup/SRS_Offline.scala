@@ -1,6 +1,6 @@
 package conviva.soup
-import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 
+import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
 import conviva.soup.Design.{Simple, Stratified}
 
