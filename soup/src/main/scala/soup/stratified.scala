@@ -11,6 +11,8 @@ import org.apache.spark.sql.functions.{
 
 object statified {
 
+    // override val df: Double = n() - nstrata() 
+// pow(col("N_")/N(), 2))
   trait StratDesign {
     def svymean_(data: DataFrame, N: Double, prod: Column): DataFrame = {
       val sdat =  data
