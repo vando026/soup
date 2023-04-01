@@ -1,6 +1,6 @@
 package conviva.soup
 
-import conviva.soup.Size._
+import conviva.soup.size._
 
 class SizeTest extends munit.FunSuite {
 

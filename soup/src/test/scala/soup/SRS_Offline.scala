@@ -2,22 +2,20 @@ package conviva.soup
 
 import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
-import conviva.soup.Design.{Simple, Stratified}
+import conviva.soup.design.{Simple, Stratified, Simple2}
 
-class DesignTest extends munit.FunSuite {
+class SRSDesignSuite extends munit.FunSuite {
 
   val spark = SparkSession
     .builder()
     .master("local[*]")
     .getOrCreate()
 
-    spark.sparkContext.setLogLevel("ERROR")
-
     val R = org.ddahl.rscala.RClient()
 
     val path = "./src/test/data"
 
-    val dat = spark.read
+    val srs = spark.read
       .option("inferSchema", "true")
       .option("header", "true")
       .csv(s"$path/agsrs.csv")
@@ -26,11 +24,11 @@ class DesignTest extends munit.FunSuite {
         when(col("acres92") < 2e5, 1).otherwise(0).alias("lt200k")
       )
 
-    val n = dat.count.toInt
+    val n = srs.count.toInt
     val N: Double = 3078
-    val acres92 = dat.select(col("acres92"))
+    val acres92 = srs.select(col("acres92"))
       .collect.map(_.getInt(0).toDouble)
-    val lt200k = dat.select(col("lt200k"))
+    val lt200k = srs.select(col("lt200k"))
       .collect.map(_.getInt(0).toDouble)
     val fpc = Array.fill(n)(N)
     val pweights = Array.fill(n)(N/n)
@@ -73,6 +71,19 @@ class DesignTest extends munit.FunSuite {
       assertEquals((t2(1) * 100).round.toDouble/100, 0.56)
     }
 
+    test("Agsrs means should be expected for Simple2") {
+      val dsrs = Simple2(srs, col("acres92"), N = 3078)
+      val t1 = dsrs.svymean
+      val t2 = dsrs.svytotal
+      assertEquals(t1("mean").toInt, 297897)
+      assertEquals(t1("se").toInt, 18898)
+      assertEquals(t1("lb").toInt, 260706)
+      assertEquals(t1("ub").toInt, 335087)
+      assertEquals(t2("total").toInt, 916927109)
+      assertEquals(t2("se").toInt, 58169381)
+      assertEquals(t2("lb").toInt, 802453858)
+      assertEquals(t2("ub").toInt, 1031400360)
+    }
+
 }
 
-// spark-shell --jars /Users/avandormael/Documents/ConvivaRepos/sampling/soup/target/scala-2.12/soup_2.12-0.0.1.jar,/Users/avandormael/Documents/ConvivaRepos/surgeon/surgeon/target/scala-2.12/surgeon_2.12-0.0.2.jar,/Users/avandormael/Workspace/jars/rscala_2.12-3.2.19.jar

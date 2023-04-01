@@ -5,7 +5,7 @@ package conviva.soup
 import breeze.stats.distributions._
 import scala.math.{pow, sqrt}
 
-object Size {
+object size {
 
   /** Calculate the required sample size for a mean using the margin of error (MOE). 
    *  @param e The desired margin of error. 

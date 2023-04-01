@@ -2,7 +2,7 @@ package conviva.soup
 
 import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
-import conviva.soup.Design.{Simple, Stratified}
+import conviva.soup.design.{Simple, Stratified}
 
 class StratDesignSuit extends munit.FunSuite {
 
@@ -14,15 +14,6 @@ class StratDesignSuit extends munit.FunSuite {
     val R = org.ddahl.rscala.RClient()
 
     val path = "./src/test/data"
-
-    val sampData = spark.read
-      .option("inferSchema", "true")
-      .option("header", "true")
-      .csv(s"$path/agsrs.csv")
-      .select(
-        col("acres92"),
-        when(col("acres92") < 2e5, 1).otherwise(0).alias("lt200k")
-      )
 
     val strdat = spark.read
       .option("inferSchema", "true")
