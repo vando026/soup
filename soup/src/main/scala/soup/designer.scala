@@ -7,7 +7,7 @@ object designer {
 
   val R = org.ddahl.rscala.RClient()
 
-  case class Simple(y: Array[Double], weights: Array[Double], fpc: Array[Double]) {
+  case class SimpleR(y: Array[Double], weights: Array[Double], fpc: Array[Double]) {
     val lib = "library(survey);"
     val dat =  "dat <- data.frame(y = %-, sampwt = %-);"
     val design = "dsrs <- svydesign(id = ~1, weights = ~sampwt, fpc = %-, data = dat);"
@@ -26,7 +26,7 @@ object designer {
     }
   }
 
-  case class Stratified(y: Array[Double], strata: Array[String], 
+  case class StratifiedR(y: Array[Double], strata: Array[String], 
       weights: Array[Double], fpc: Array[Double]) {
     val lib = "library(survey);"
     val dat =  "dat <- data.frame(y = %-, sampwt = %-, fpc = %-, strata = %-);"
