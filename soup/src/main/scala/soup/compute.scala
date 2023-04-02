@@ -12,7 +12,6 @@ object compute {
     val y: Column
     val strata: Column
     val df: Double
-    val vprod: Column
     def smpMVariance: Column
 
     /** Calculate the finite population correction factor: 1 - (n/N) */
@@ -56,7 +55,7 @@ object compute {
     def cv_(yest: Column, yse: Column): Column = yse / yest
   
     /** Dataframe of summary statistics. For SRS, strata = 1. */
-    val sdat = preCompute(data)
+    lazy val sdat = preCompute(data)
 
     /** Return the summary statistics. */
     def summary(): DataFrame = sdat 
