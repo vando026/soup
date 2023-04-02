@@ -39,12 +39,9 @@ object compute {
     case class confint_(data: DataFrame, df: Double, alpha: Double) {
       val tstat = new TDistribution(df)
         .inverseCumulativeProbability(1 - (alpha/2))
-      def lb(): Column = {
-        (col("yest") - lit(tstat) * col("yse")).alias("lb")
-      }
-      def ub(): Column = {
-        (col("yest") + lit(tstat) * col("yse")).alias("ub")
-      }
+      val width = lit(tstat) * col("yse")
+      def lb(): Column = col("yest") - width 
+      def ub(): Column = col("yest") + width
     }
     /** Calculate the coefficient of variation. */
     def cv_(yest: Column, yse: Column): Column = yse / yest
