@@ -2,37 +2,30 @@ package conviva.soup
 
 import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
-// import conviva.soup.Design.{Stratified}
+import conviva.soup.Design.{Stratified}
 
-// class StratDesignSuit extends munit.FunSuite {
+class StratDesignSuit extends munit.FunSuite {
 
-//   val spark = SparkSession
-//     .builder()
-//     .master("local[*]")
-//     .getOrCreate()
+  val spark = SparkSession
+    .builder()
+    .master("local[*]")
+    .getOrCreate()
 
 //     val R = org.ddahl.rscala.RClient()
 
-//     val path = "./src/test/data"
+    val path = "./src/test/data"
 
-//     val strdat = spark.read
-//       .option("inferSchema", "true")
-//       .option("header", "true")
-//       .csv(s"$path/agstrat.csv")
-//       .withColumn("lt200k",
-//         when(col("acres92") < 2e5, 1).otherwise(0))
-//       strdat.agg(mean("acres92"), stddev("acres92")).show
-
-//     val wdat = strdat.groupBy("region")
-//       .agg(count("*").cast("double").alias("strataSize"))
-//       .withColumn("popsize", 
-//         when(col("region") === "NE", 220.0)
-//         .when(col("region") === "NC", 1054.0)
-//         .when(col("region") === "S", 1382.0)
-//         .when(col("region") === "W", 422.0))
-    
-//     val strdat1 = strdat.join(wdat, List("region"), "left")
-//       .withColumn("stweight", round(col("popSize")/col("strataSize"), 8))
+    val strdat = spark.read
+      .option("inferSchema", "true")
+      .option("header", "true")
+      .csv(s"$path/agstrat.csv")
+      .withColumn("lt200k",
+        when(col("acres92") < 2e5, 1).otherwise(0))
+      .withColumn("N_", 
+        when(col("region") === "NE", 220.0)
+        .when(col("region") === "NC", 1054.0)
+        .when(col("region") === "S", 1382.0)
+        .when(col("region") === "W", 422.0))
 
 //     val strata = strdat1.select(col("region"))
 //       .collect.map(_.getString(0))
@@ -45,21 +38,23 @@ import org.apache.spark.sql.functions._
 //     val lt200k = strdat1.select(col("lt200k"))
 //       .collect.map(_.getInt(0).toDouble)
 
-    // test("Agstr mean and total should be expected") {
-    //   val dstr = Stratified(acres, strata, stweights, stfpc)
-    //   val t0 = dstr.estimate("svymean").map(_.toDouble)
-    //   val t1 = dstr.confint("svymean").map(_.toDouble)
-    //   val t2 = dstr.estimate("svytotal").map(_.toDouble)
-    //   val t3 = dstr.confint("svytotal").map(_.toDouble)
-    //   assertEquals(math.round(t0(0)), 295561L)
-    //   assertEquals(math.round(t0(1)), 16380L)
-    //   assertEquals(math.round(t1(0)), 263325L)
-    //   assertEquals(math.round(t1(1)), 327797L)
-    //   assertEquals(math.round(t2(0)), 909736036L)
-    //   assertEquals(math.round(t2(1)), 50417248L)
-    //   assertEquals(math.round(t3(0)), 810514350L)
-    //   assertEquals(math.round(t3(1)), 1008957721L)
-    // }
+    def ex(x: String, d: DataFrame): Int = {
+      math.round(d.select(col(x)).collect()(0).getDouble(0)).toInt
+    }
+
+    test("Agstr mean and total should be expected") {
+      val dstr = Stratified(strdat, col("acres92"), col("region"))
+      val t0 = dstr.svymean()
+      val t1 = dstr.svytotal()
+      assertEquals(ex("yest", t0), 295561)
+      assertEquals(ex("yse", t0), 16380)
+      assertEquals(ex("lb", t0), 263325)
+      assertEquals(ex("ub", t0), 327797)
+      assertEquals(ex("yest", t1), 909736035)
+      assertEquals(ex("yse", t1), 50417248)
+      assertEquals(ex("lb", t1), 810514350)
+      assertEquals(ex("ub", t1), 1008957721)
+    }
 
     // test("Agstr props should be expected") {
     //   val ltstr = Stratified(lt200k, strata, stweights, stfpc)
@@ -72,5 +67,5 @@ import org.apache.spark.sql.functions._
     // }
 
 
-// }
+}
 
