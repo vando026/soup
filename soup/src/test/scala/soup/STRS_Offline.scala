@@ -11,8 +11,6 @@ class StratDesignSuit extends munit.FunSuite {
     .master("local[*]")
     .getOrCreate()
 
-//     val R = org.ddahl.rscala.RClient()
-
     val path = "./src/test/data"
 
     val strdat = spark.read
@@ -26,17 +24,6 @@ class StratDesignSuit extends munit.FunSuite {
         .when(col("region") === "NC", 1054.0)
         .when(col("region") === "S", 1382.0)
         .when(col("region") === "W", 422.0))
-
-//     val strata = strdat1.select(col("region"))
-//       .collect.map(_.getString(0))
-//     val stfpc = strdat1.select(col("popSize"))
-//       .collect.map(_.getDouble(0))
-//     val stweights = strdat1.select(col("stweight"))
-//       .collect.map(_.getDouble(0))
-//     val acres = strdat1.select(col("acres92"))
-//       .collect.map(_.getInt(0).toDouble)
-//     val lt200k = strdat1.select(col("lt200k"))
-//       .collect.map(_.getInt(0).toDouble)
 
     def ex(x: String, d: DataFrame): Int = {
       math.round(d.select(col(x)).collect()(0).getDouble(0)).toInt
@@ -56,15 +43,18 @@ class StratDesignSuit extends munit.FunSuite {
       assertEquals(ex("ub", t1), 1008957721)
     }
 
-    // test("Agstr props should be expected") {
-    //   val ltstr = Stratified(lt200k, strata, stweights, stfpc)
-    //   val t1 = ltstr.estimate("svymean")
-    //   val t2 = ltstr.confint("svymean")
-    //   assertEquals(t1(0), 0.5139)
-    //   assertEquals(t1(1), 0.0248)
-    //   assertEquals((t2(0) * 1000).round.toDouble/1000, 0.465)
-    //   assertEquals((t2(1) * 1000).round.toDouble/1000, 0.563)
-    // }
+    def exd(x: String, d: DataFrame): Double = {
+      d.select(col(x)).collect()(0).getDouble(0)
+    }
+
+    test("Agstr props should be expected") {
+      val ltstr = Stratified(strdat, col("lt200k"), col("region"))
+      val t1 = ltstr.svymean()
+      assertEquals((exd("yest", t1) * 10000).round.toDouble/10000, 0.5139)
+      assertEquals((exd("yse", t1) * 10000).round.toDouble/10000, 0.0248)
+      assertEquals((exd("lb", t1) * 1000).round.toDouble/1000, 0.465)
+      assertEquals((exd("ub", t1) * 1000).round.toDouble/1000, 0.563)
+    }
 
 
 }
