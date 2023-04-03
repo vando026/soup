@@ -3,6 +3,7 @@ package conviva.soup
 import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
 import conviva.soup.Design.{Simple}
+import conviva.soup.Compute._
 
 class SRSDesignSuite extends munit.FunSuite {
 
@@ -13,7 +14,7 @@ class SRSDesignSuite extends munit.FunSuite {
 
     val path = "./src/test/data"
 
-    val srs = spark.read
+    val srs_ = spark.read
       .option("inferSchema", "true")
       .option("header", "true")
       .csv(s"$path/agsrs.csv")
@@ -23,12 +24,14 @@ class SRSDesignSuite extends munit.FunSuite {
       )
       .withColumn("N_", lit(3078.0))
 
+
     def exd(x: String, d: DataFrame): Double = {
       d.select(col(x)).collect()(0).getDouble(0)
     }
 
     test("Agsrs props should be expected") {
-      val ltsrs = Simple(srs, col("lt200k"))
+      val srs = Summarize(srs_, col("lt200k")).data
+      val ltsrs = Simple(srs)
       val t1 = ltsrs.svymean()
       assertEquals(exd("yest", t1), 0.51)
       assertEquals((exd("yse", t1) * 10000).round.toDouble/10000, 0.0275)
@@ -41,7 +44,8 @@ class SRSDesignSuite extends munit.FunSuite {
     }
 
     test("Agsrs means should be expected for Simple") {
-      val dsrs = Simple(srs, col("acres92"))
+      val srs = Summarize(srs_, col("acres92")).data
+      val dsrs = Simple(srs)
       val t1 = dsrs.svymean()
       val t2 = dsrs.svytotal()
       assertEquals(ex("yest", t1), 297897)
