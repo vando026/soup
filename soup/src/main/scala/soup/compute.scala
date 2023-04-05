@@ -48,6 +48,8 @@ object Compute {
        .withColumn("ub", col("yest") + width)
     }
 
+    def summary(): DataFrame = data
+
     /** Calculate the coefficient of variation. */
     def cv_(yest: Column, yse: Column): Column = yse / yest
   
