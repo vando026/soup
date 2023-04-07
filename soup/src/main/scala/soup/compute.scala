@@ -2,7 +2,6 @@ package conviva.soup
 
 import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
-import org.apache.commons.math3.distribution.TDistribution
 
 object Compute {
 
@@ -25,19 +24,14 @@ object Compute {
 
   trait Survey {
     val data: DataFrame
-    val df: Double
+    val tstat: Double
     def smpMVariance: Column
-
     /** Get the final estimates from sampled data with standard error and
      *  confidence intervals.
      *  @param data A dataset processed from `Summarized`.
-     *  @param df The degrees of freedom, computed internally.
-     *  @param alpha The alpha for t-distribution based confidence intervals.
      *  */ 
-    def getEst(data: DataFrame, df: Double, alpha: Double): DataFrame = {
-      val tstat = new TDistribution(df)
-        .inverseCumulativeProbability(1 - (alpha/2))
-      val adat = data.agg(
+    def getEst(data: DataFrame): DataFrame = {
+      val adat = data.select(
           sum("yest").alias("yest"), 
           sum("yvar").alias("yvar")
         )
@@ -55,11 +49,11 @@ object Compute {
   
     /** Return the population size. */
     def N(): Double = 
-      data.agg(sum("N_")).collect()(0).getDouble(0)
+      data.select(sum("N_")).collect()(0).getDouble(0)
 
     /** Return the sample size. */
     def n(): Double =
-      data.agg(sum("n")).collect()(0).getDouble(0)
+      data.select(sum("n")).collect()(0).getDouble(0)
 
     /** Return the number of strata. */
     def nstrata(): Long =  data.count
@@ -74,7 +68,7 @@ object Compute {
      *  confidence intervals.
      *  @param alpha The default value is 0.05 for 95% conidence intervals. 
      *  */
-    def svymean(alpha: Double = 0.05): DataFrame = getEst(mdat, df, alpha)
+    def svymean(alpha: Double = 0.05): DataFrame = getEst(mdat)
   }
 
   trait SVYTotal extends Survey {
@@ -86,7 +80,7 @@ object Compute {
      *  confidence intervals.
      *  @param alpha The default value is 0.05 for 95% conidence intervals. 
      *  */
-    def svytotal(alpha: Double = 0.05): DataFrame =  getEst(tdat, df, alpha)
+    def svytotal(alpha: Double = 0.05): DataFrame =  getEst(tdat)
   }
 
 }

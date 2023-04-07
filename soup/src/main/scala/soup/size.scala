@@ -1,11 +1,9 @@
 package conviva.soup
 
-// import breeze.linalg._
-// import breeze.numerics._
 import breeze.stats.distributions._
 import scala.math.{pow, sqrt}
 
-object size {
+object Size {
 
   /** Calculate the required sample size for a mean using the margin of error (MOE). 
    *  @param e The desired margin of error. 
@@ -26,7 +24,8 @@ object size {
   }
   
   /** Calculate the sample size for a mean using the coeffient of variation (CV).
-   *  @param cv0 Target value of CV of the sample mean. This value must be given as a proportion, ideally between 
+   *  @param cv0 Target value of CV of the sample mean. This 
+   *  value must be given as a proportion, ideally between 
    *  0.01 to 0.1.
    *  @param ybar The population mean of target variable.
    *  @param s2 The population variance.  
