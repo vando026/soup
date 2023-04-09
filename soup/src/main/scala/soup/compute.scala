@@ -2,6 +2,7 @@ package conviva.soup
 
 import org.apache.spark.sql.{SparkSession, DataFrame, Column}
 import org.apache.spark.sql.functions._
+import org.apache.commons.math3.distribution.TDistribution
 
 object Compute {
 
@@ -24,22 +25,25 @@ object Compute {
 
   trait Survey {
     val data: DataFrame
-    val tstat: Double
+    val df: Double
     def smpMVariance: Column
     /** Get the final estimates from sampled data with standard error and
      *  confidence intervals.
      *  @param data A dataset processed from `Summarized`.
      *  */ 
-    def getEst(data: DataFrame): DataFrame = {
-      val adat = data.select(
-          sum("yest").alias("yest"), 
-          sum("yvar").alias("yvar")
-        )
+    def getEst(data: DataFrame, df: Double, alpha: Double): DataFrame = {
+      val tstat = new TDistribution(df)
+        .inverseCumulativeProbability(1 - (alpha/2))
+      lazy val yest = data.select(sum("yest"))
+      lazy val yvar = data.select(sum("yvar"))
+        .first.getDouble(0)
+      lazy val yse = math.sqrt(yvar)
+      lazy val width = tstat * yse
+      lazy val lb = yest - width
+      lazy val lb = yest + width
         .withColumn("yse", sqrt(col("yvar")))
-      val width = lit(tstat) * col("yse")
-      adat
-       .withColumn("lb", col("yest") - width)
-       .withColumn("ub", col("yest") + width)
+        .withColumn("lb", col("yest") - width)
+        .withColumn("ub", col("yest") + width)
     }
 
     def summary(): DataFrame = data
@@ -49,11 +53,11 @@ object Compute {
   
     /** Return the population size. */
     def N(): Double = 
-      data.select(sum("N_")).collect()(0).getDouble(0)
+      data.select(sum("N_")).first().getDouble(0)
 
     /** Return the sample size. */
     def n(): Double =
-      data.select(sum("n")).collect()(0).getDouble(0)
+      data.select(sum("n")).first().getDouble(0)
 
     /** Return the number of strata. */
     def nstrata(): Long =  data.count
@@ -63,24 +67,24 @@ object Compute {
   trait SVYMean extends Survey {
     def smpMean(N: Double): Column = (col("ybar") * col("N_") / N).alias("yest")
     def smpMVariance: Column
-    val mdat = data.select(smpMean(N()), smpMVariance)
+    def __mdat = data.select(smpMean(N()), smpMVariance)
     /** Calculate the survey mean, with standerd error and
      *  confidence intervals.
      *  @param alpha The default value is 0.05 for 95% conidence intervals. 
      *  */
-    def svymean(alpha: Double = 0.05): DataFrame = getEst(mdat)
+    def svymean(alpha: Double = 0.05): DataFrame = getEst(__mdat, df, alpha)
   }
 
   trait SVYTotal extends Survey {
     def smpTotal(): Column = (col("ybar") * col("N_")).alias("yest")
     def smpTVariance(): Column = 
       (col("fpc") * pow(col("N_"), 2) * (col("yvar") / col("n"))).alias("yvar")
-    def tdat = data.select(smpTotal, smpTVariance)
+    def __tdat = data.select(smpTotal, smpTVariance)
     /** Calculate the survey mean, with standerd error and
      *  confidence intervals.
      *  @param alpha The default value is 0.05 for 95% conidence intervals. 
      *  */
-    def svytotal(alpha: Double = 0.05): DataFrame =  getEst(tdat)
+    def svytotal(alpha: Double = 0.05): DataFrame =  getEst(__tdat, df, alpha)
   }
 
 }
