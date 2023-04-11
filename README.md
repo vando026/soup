@@ -1,5 +1,5 @@
 <p align="center">
-<img src="./media/pot.jpeg" alt="" width="200" >
+<img src="./media/pot.png" alt="" width="200" >
 </p>
 
 <h1 align="center"> conviva-soup</h1>
