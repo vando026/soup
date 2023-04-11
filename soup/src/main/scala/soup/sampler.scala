@@ -11,7 +11,6 @@ object sampler {
 
   case class SampleFrame(obj: DataPath) {
 
-
     val sparkSession = SparkSession
         .builder()
         .master("local[*]")
@@ -23,7 +22,6 @@ object sampler {
 
       val dbfs = FileSystem.get(ss)
 
-      // val obj = Hourly(2, 23, List(2))
       val paths = dbfs.listStatus(new Path(obj.toPath))
         .map(_.getPath.toString)
         .sorted.drop(1) // drop1 drops cust=0 after sort

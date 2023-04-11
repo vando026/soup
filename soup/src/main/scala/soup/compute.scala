@@ -65,8 +65,8 @@ object Compute {
     def smpMean(N: Double): Column = (col("ybar") * col("N_") / N).alias("yest")
     def smpMVariance: Column
     def __mdat = data.select(smpMean(N()), smpMVariance)
-    def yest = data.select(smpMean(N())).first.getDouble(0)
-    def yvar = data.select(smpMVariance).first.getDouble(0)
+    // def yest = data.select(smpMean(N())).first.getDouble(0)
+    // def yvar = data.select(smpMVariance).first.getDouble(0)
     /** Calculate the survey mean, with standerd error and
      *  confidence intervals.
      *  @param alpha The default value is 0.05 for 95% conidence intervals. 
@@ -79,8 +79,8 @@ object Compute {
     def smpTVariance(): Column = 
       (col("fpc") * pow(col("N_"), 2) * (col("yvar") / col("n"))).alias("yvar")
     def __tdat = data.select(smpTotal, smpTVariance)
-    def test = data.select(smpTotal).first.getDouble(0)
-    def tvar = data.select(smpTVariance).first.getDouble(0)
+    // def test = data.select(smpTotal).first.getDouble(0)
+    // def tvar = data.select(smpTVariance).first.getDouble(0)
     /** Calculate the survey mean, with standerd error and
      *  confidence intervals.
      *  @param alpha The default value is 0.05 for 95% conidence intervals. 
