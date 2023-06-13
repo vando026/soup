@@ -4,7 +4,7 @@ package conviva.soup
 import org.apache.spark.sql.{SparkSession, Row}
 import org.apache.hadoop.fs._
 import conviva.surgeon.Paths._
-import conviva.soup.sampler._
+import conviva.soup.Sampler._
 import org.apache.spark.sql.{SparkSession, DataFrame}
 
 class PathSpec extends munit.FunSuite {
@@ -20,5 +20,7 @@ class PathSpec extends munit.FunSuite {
   // ois.close
 
   val path = Hourly(2, 23, List(2)).toPath
+  val sframe = SampleFrame(path)
+  
 
 }
