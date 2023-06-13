@@ -13,14 +13,4 @@ class PathSpec extends munit.FunSuite {
       .builder()
       .master("local[*]")
       .getOrCreate()
-
-  // val dpath = "./src/test/data/"
-  // val ois = new ObjectInputStream(new java.io.FileInputStream(s"$dpath/pathsHourly2_24"))
-  // val pathx = ois.readObject.asInstanceOf[Array[String]]
-  // ois.close
-
-  val path = Hourly(2, 23, List(2)).toPath
-  val sframe = SampleFrame(path)
-  
-
 }

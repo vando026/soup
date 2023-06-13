@@ -1,5 +1,5 @@
 scalaVersion := "2.12.13"
-version := "0.0.4-2"
+version := "0.0.5"
 name := "soup"
 organization := "conviva"
 
@@ -13,5 +13,3 @@ libraryDependencies ++= List(
 publishArtifact := false
 testFrameworks += TestFramework("munit.TestFramework")
 logLevel := Level.Warn
-
-// unmanagedBase := new java.io.File("/Users/avandormael/miniconda3/envs/dbconnect/lib/python3.9/site-packages/pyspark/jars")

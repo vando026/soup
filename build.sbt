@@ -1,10 +1,10 @@
 scalaVersion := "2.12.13"
-version := "0.0.1"
+version := "0.0.5"
 name := "sampling"
 organization := "conviva"
 
-lazy val s4 = (
-  Project("s4", file("s4"))
+lazy val soup = (
+  Project("soup", file("soup"))
    .settings(
     libraryDependencies ++= List(
       "org.apache.spark" %% "spark-sql" % "3.3.1",
@@ -20,5 +20,5 @@ testFrameworks += TestFramework("munit.TestFramework")
 
 lazy val docs = project
   .in(file("conviva-sampling.wiki"))
-  .dependsOn(s4)
+  .dependsOn(soup)
   .enablePlugins(MdocPlugin)
