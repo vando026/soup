@@ -19,6 +19,6 @@ testFrameworks += TestFramework("munit.TestFramework")
 // Global / semanticdbEnabled := true
 
 lazy val docs = project
-  .in(file("conviva-sampling.wiki"))
+  .in(file("soup.wiki"))
   .dependsOn(soup)
   .enablePlugins(MdocPlugin)
