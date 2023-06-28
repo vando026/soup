@@ -1,11 +1,11 @@
 package conviva.soup
 
-import org.apache.spark.sql.{SparkSession, DataFrame, Column}
-import org.apache.spark.sql.functions._
-import conviva.soup.Design.{Stratified}
-import conviva.soup.Compute._
-
 class StratDesignSuit extends munit.FunSuite {
+
+  import org.apache.spark.sql.{SparkSession, DataFrame, Column}
+  import org.apache.spark.sql.functions._
+  import conviva.soup.Design.{Stratified}
+  import conviva.soup.Compute._
 
   val spark = SparkSession
     .builder()
@@ -28,7 +28,7 @@ class StratDesignSuit extends munit.FunSuite {
 
 
     test("Agstr mean and total should be expected") {
-      val strdat = Summarize(strdat_, col("acres92"), col("region")).data
+      val strdat = Summarize(strdat_, y = col("acres92"), strata = col("region")).compute
       val dstr = Stratified(strdat)
       val t0 = dstr.svymean()
       val t1 = dstr.svytotal()
@@ -43,7 +43,7 @@ class StratDesignSuit extends munit.FunSuite {
     }
 
     test("Agstr props should be expected") {
-      val strdat = Summarize(strdat_, col("lt200k"), col("region")).data
+      val strdat = Summarize(strdat_, y = col("lt200k"), strata = col("region")).compute
       val ltstr = Stratified(strdat)
       val t1 = ltstr.svymean()
       assertEquals((t1("yest") * 10000).round.toDouble/10000, 0.5139)
