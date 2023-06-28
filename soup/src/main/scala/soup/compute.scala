@@ -28,21 +28,20 @@ object Compute {
   trait Survey {
     val data: DataFrame
     val df: Double
+    def setData(data: DataFrame): DataFrame = data
     def smpMVariance: Column
     /** Get the final estimates from sampled data with standard error and
      *  confidence intervals.
      *  @param data A dataset processed from `Summarized`.
      *  */ 
-    def getEst(data: DataFrame, df: Double, alpha: Double): Map[String, Double] = {
-      val tstat = new TDistribution(df)
-        .inverseCumulativeProbability(1 - (alpha/2))
-      lazy val yest = data.select(sum("yest")).first.getDouble(0)
-      lazy val yvar = data.select(sum("yvar")).first.getDouble(0)
-      lazy val yse = math.sqrt(yvar)
-      lazy val width = tstat * yse
-      lazy val lb = yest - width
-      lazy val ub = yest + width
-      Map("yest" -> yest, "yvar" -> yvar, "yse" -> yse, "lb" -> lb, "ub" -> ub)
+    def getEst(data: DataFrame, df: Double, alpha: Double): DataFrame = {
+      val tstat = new TDistribution(df).inverseCumulativeProbability(1 - (alpha/2))
+       data
+        .withColumn("yse",  sqrt(col("yvar")))
+        .withColumn("width", lit(tstat) * col("yse"))
+        .withColumn("lb", col("yest") - col("width"))
+        .withColumn("ub", col("yest") + col("width"))
+        .drop("width")
     }
 
     def summary(): DataFrame = data
@@ -66,22 +65,22 @@ object Compute {
   trait SVYMean extends Survey {
     def smpMean(N: Double): Column = (col("ybar") * col("N_") / N).alias("yest")
     def smpMVariance: Column
-    def __mdat = data.select(smpMean(N()), smpMVariance)
+    def __mdat = setData(data).select(smpMean(N()), smpMVariance)
     /** Calculate the survey mean, with standerd error and confidence intervals.
      *  @param alpha The default value is 0.05 for 95% conidence intervals. 
      *  */
-    def svymean(alpha: Double = 0.05): Map[String, Double] = getEst(__mdat, df, alpha)
+    def svymean(alpha: Double = 0.05): DataFrame = getEst(__mdat, df, alpha)
   }
 
   trait SVYTotal extends Survey {
     def smpTotal(): Column = (col("ybar") * col("N_")).alias("yest")
     def smpTVariance(): Column = 
       (col("fpc") * pow(col("N_"), 2) * (col("yvar") / col("n"))).alias("yvar")
-    def __tdat = data.select(smpTotal, smpTVariance)
+    def __tdat = setData(data).select(smpTotal, smpTVariance)
     /** Calculate the survey mean, with standerd error and confidence intervals.
      *  @param alpha The default value is 0.05 for 95% conidence intervals. 
      *  */
-    def svytotal(alpha: Double = 0.05): Map[String, Double] =  getEst(__tdat, df, alpha)
+    def svytotal(alpha: Double = 0.05): DataFrame =  getEst(__tdat, df, alpha)
   }
 
 }

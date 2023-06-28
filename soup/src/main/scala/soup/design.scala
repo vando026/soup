@@ -6,8 +6,7 @@ import conviva.soup.Compute._
 
 object Design {
 
-  case class Simple(data: DataFrame) 
-      extends Survey with SVYMean with SVYTotal {
+  case class Simple(data: DataFrame) extends Survey with SVYMean with SVYTotal {
     val df: Double = n() - 1
     override def smpMVariance(): Column = {
       (col("fpc") * (col("yvar") / col("n"))).alias("yvar")
@@ -17,6 +16,9 @@ object Design {
   case class Stratified(data: DataFrame)  
       extends Survey with SVYMean with SVYTotal {
     val df: Double = n() - nstrata() 
+    override def setData(data: DataFrame): DataFrame = {
+      data.select(sum())
+    }
     override def smpMVariance(): Column = {
       (col("fpc") * pow(col("N_")/N(), 2) * (col("yvar") / col("n"))).alias("yvar")
     }
