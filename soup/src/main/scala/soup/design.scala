@@ -1,10 +1,11 @@
 package conviva.soup 
 
-import org.apache.spark.sql.{DataFrame, Column}
-import org.apache.spark.sql.functions.{pow, lit, col}
-import conviva.soup.Compute._
 
 object Design {
+
+  import org.apache.spark.sql.{DataFrame, Column}
+  import org.apache.spark.sql.functions.{pow, lit, col, sum}
+  import conviva.soup.Compute._
 
   case class Simple(data: DataFrame) extends Survey with SVYMean with SVYTotal {
     val df: Double = n() - 1
@@ -13,11 +14,10 @@ object Design {
     }
   }
 
-  case class Stratified(data: DataFrame)  
-      extends Survey with SVYMean with SVYTotal {
+  case class Stratified(data: DataFrame) extends Survey with SVYMean with SVYTotal {
     val df: Double = n() - nstrata() 
     override def setData(data: DataFrame): DataFrame = {
-      data.select(sum())
+      data.select(sum("yest").alias("yest"), sum("yvar").alias("yvar"))
     }
     override def smpMVariance(): Column = {
       (col("fpc") * pow(col("N_")/N(), 2) * (col("yvar") / col("n"))).alias("yvar")
