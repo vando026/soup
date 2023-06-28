@@ -1,6 +1,6 @@
-scalaVersion := "2.12.17"
+scalaVersion := "2.12.13"
 version := "0.0.5"
-name := "sampling"
+name := "soup"
 organization := "conviva"
 
 lazy val soup = (

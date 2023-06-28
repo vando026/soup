@@ -9,17 +9,33 @@ object Compute {
   /** Prepare the data for estimation by taking mean and variance of y with n
    *  and N. 
    *  @param data The input dataframe. 
+   *  @param y The quantity or variable to estimate.
    *  */
-  case class Summarize(dat: DataFrame, y: Column, strata: Column = lit(1)) {
-    def data(): DataFrame = {
-      dat.groupBy(strata)
-       .agg(
-         mean(y).alias("ybar"),
-         variance(y).alias("yvar"),
-         count("*").cast("double").alias("n"),
-         first("N_").alias("N_")
+  case class Summarize(dat: DataFrame, y: Column, N: Int, strata: Column = lit(1)) {
+    def compute(): DataFrame = {
+      dat.withColumn("N_", lit(N))
+        .groupBy(strata)
+        .agg(
+           mean(y).alias("ybar"),
+           variance(y).alias("yvar"),
+           count("*").cast("double").alias("n"),
+           first("N_").alias("N_")
        )
        .withColumn("fpc", lit(1) - (col("n") / col("N_")))
+    }
+  }
+  object Summarize {
+    def apply(dat: DataFrame, y: Column, N: DataFrame): DataFrame = {
+      def data(): DataFrame = {
+        dat.groupBy(strata)
+         .agg(
+           mean(y).alias("ybar"),
+           variance(y).alias("yvar"),
+           count("*").cast("double").alias("n"),
+           first("N_").alias("N_")
+         )
+         .withColumn("fpc", lit(1) - (col("n") / col("N_")))
+      }
     }
   }
 

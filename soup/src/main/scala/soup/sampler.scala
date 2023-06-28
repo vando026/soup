@@ -2,7 +2,7 @@ package conviva.soup
 
 import org.apache.spark.sql.{SparkSession, DataFrame, Row}
 import org.apache.hadoop.fs._
-import conviva.surgeon.Paths._
+// import conviva.surgeon.Paths._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.functions.{regexp_extract, col}
 import scala.collection.JavaConversions._
