@@ -59,31 +59,6 @@ object Compute {
         .select(data.columns(0), "yest", "yse", "lb", "ub",
           "df", "tstat", "smpN", "N")
     }
-
-  }
-
-  // trait SVYMean extends Survey {
-  //   def smpMean(): Column = (col("ybar") * col("N_") / N).alias("yest")
-  //   def smpMVariance: Column
-  //   val __mdat = data.select(col(data.columns(1)), smpMean, smpMVariance)
-  //   /** Calculate the survey mean, with standerd error and confidence intervals.
-  //    *  @param alpha The default value is 0.05 for 95% conidence intervals. 
-  //    *  */
-  //   def svymean(alpha: Double = 0.05): DataFrame = getEst(__mdat, df, alpha)
-  // }
-
-  trait SVYTotal extends Survey {
-    /** Calculate the survey mean, with standerd error and confidence intervals.
-     *  @param alpha The default value is 0.05 for 95% confidence intervals. 
-     *  */
   }
 
 }
-
-// def test(s: String = "") = {
-//   s match {
-//     case x if x == "" => "yes"
-//     case _ => s
-//   }
-// }
-// test()
