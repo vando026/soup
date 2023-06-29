@@ -12,15 +12,18 @@ object Compute {
    *  @param data The input dataframe. 
    *  @param y The quantity or variable to estimate.
    *  */
-  case class Summarize(dat: DataFrame, y: Column, strata: Column = lit(1)) {
+  case class Summarize(dat: DataFrame, y: String, strata: String = "") {
     def compute(): DataFrame = {
-      assert(dat.columns.contains("N"))
-      dat.groupBy(strata)
-        .agg(
-          mean(y).alias("ybar"),
-          variance(y).alias("yvar"),
-          count("*").cast("double").alias("smpN"),
-          first("N").alias("N")
+      assert(dat.columns.contains("N"), "Column called N required for population total.")
+      val byVar = strata match {
+        case x if x == "" => lit(1)
+        case _ => col(strata)
+      }
+      dat.groupBy(byVar).agg(
+        mean(col(y)).alias("ybar"),
+        variance(y).alias("yvar"),
+        count("*").cast("double").alias("smpN"),
+        first("N").alias("N")
       )
       .withColumn("fpc", lit(1) - (col("smpN") / col("N")))
     }
@@ -28,19 +31,21 @@ object Compute {
 
   trait Survey {
 
-    val data: DataFrame
-    def calcDf: Column
-    def smpMVariance: Column
     /** Get the final estimates from sampled data with standard error and
      *  confidence intervals.
      *  @param data A dataset processed from `Summarized`.
      *  */ 
-    
+    val data: DataFrame
+    def calcDf(): Column = col("smpN") - lit(1)
+    def smpMean(): Column = col("ybar").alias("yest")
+    def smpVar(): Column = {
+      (col("fpc") * (col("yvar") / col("smpN"))).alias("yvar")
+    }
     def tstat(alpha: Double) = udf((col: Double) => {
       new TDistribution(col).inverseCumulativeProbability(1 - (alpha / 2))
     })
 
-    def getEst(data: DataFrame, df: Double, alpha: Double): DataFrame = {
+    def getEst(data: DataFrame, alpha: Double): DataFrame = {
        data
         .withColumn("yse",  sqrt(col("yvar")))
         .withColumn("df", calcDf)
@@ -91,4 +96,10 @@ object Compute {
 
 }
 
-
+// def test(s: String = "") = {
+//   s match {
+//     case x if x == "" => "yes"
+//     case _ => s
+//   }
+// }
+// test()
