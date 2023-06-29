@@ -24,29 +24,46 @@ class SRSDesignSuite extends munit.FunSuite {
       )
       .withColumn("N_", lit(3078.0))
 
+    val strdat_ = spark.read
+      .option("inferSchema", "true")
+      .option("header", "true")
+      .csv(s"$path/agstrat.csv")
+      .withColumn("N_", 
+        when(col("region") === "NE", 220.0)
+        .when(col("region") === "NC", 1054.0)
+        .when(col("region") === "S", 1382.0)
+        .when(col("region") === "W", 422.0))
+
     test("Agsrs props should be expected") {
       val srs = Summarize(srs_, y = col("lt200k")).compute
       val ltsrs = Simple(srs)
       val t1 = ltsrs.svymean()
-      assertEquals(t1("yest"), 0.51)
-      assertEquals((t1("yse") * 10000).round.toDouble/10000, 0.0275)
-      assertEquals((t1("lb") * 100).round.toDouble/100, 0.46)
-      assertEquals((t1("ub") * 100).round.toDouble/100, 0.56)
+      assertEquals(t1.select("yest").first.getDouble(0), 0.51)
+      assertEquals(t1.select(round(col("yse"), 4)).first.getDouble(0), 0.0275)
+      assertEquals(t1.select(round(col("lb"), 3)).first.getDouble(0), 0.456)
+      assertEquals(t1.select(round(col("ub"), 3)).first.getDouble(0), 0.564)
     }
 
-    test("Agsrs means should be expected for Simple") {
+    test("Agsrs means and totals should be expected") {
       val srs = Summarize(srs_, y = col("acres92")).compute
       val dsrs = Simple(srs)
       val t1 = dsrs.svymean()
       val t2 = dsrs.svytotal()
-      assertEquals(t1("yest").toInt, 297897)
-      assertEquals(t1("yse").toInt, 18898)
-      assertEquals(t1("lb").toInt, 260706)
-      assertEquals(t1("ub").toInt, 335087)
-      assertEquals(t2("yest").toInt, 916927109)
-      assertEquals(t2("yse").toInt, 58169381)
-      assertEquals(t2("lb").toInt, 802453858)
-      assertEquals(t2("ub").toInt, 1031400360)
+      assertEquals(t1.select(round(col("yest"))).first.getDouble(0), 297897.0)
+      assertEquals(t1.select(round(col("yse"))).first.getDouble(0), 18898.0)
+      assertEquals(t1.select(round(col("lb"), 1)).first.getDouble(0), 260706.3)
+      assertEquals(t1.select(round(col("ub"), 1)).first.getDouble(0), 335087.8)
+      assertEquals(t2.select(round(col("yest"))).first.getDouble(0), 916927110.0)
+      assertEquals(t2.select(round(col("yse"))).first.getDouble(0), 58169381.0)
+      assertEquals(t2.select(round(col("lb"))).first.getDouble(0), 802453859.0)
+      assertEquals(t2.select(round(col("ub"))).first.getDouble(0), 1031400361.0)
+    }
+
+    test("Agsrs means by grouping variable should be expected") {
+      val srs = Summarize(strdat_, y = col("acres92"), strata = col("region")).compute
+      val dsrs = Simple(srs)
+      val t1 = dsrs.svymean()
+      val t0 = dsrs.svytotal()
     }
 
 }
