@@ -8,8 +8,10 @@ object Design {
   import conviva.soup.Compute._
 
   case class Simple(data: DataFrame) extends Survey  {
-    val smpStats = data.select(col(data.columns(0)), smpMean, smpVar, col("smpN"))
-    def svymean(alpha: Double = 0.05): DataFrame = getEst(smpStats, alpha)
+    val meanData = data.select(data.col("*"), smpMean, smpMVar)
+    def svymean(alpha: Double = 0.05): DataFrame = getEst(meanData, alpha)
+    val totData = data.select(data.col("*"), smpTotal, smpTVar)
+    def svytotal(alpha: Double = 0.05): DataFrame =  getEst(totData, alpha)
   }
 
   // case class Stratified(data: DataFrame) extends Survey with SVYMean with SVYTotal {

@@ -36,39 +36,29 @@ object Compute {
      *  @param data A dataset processed from `Summarized`.
      *  */ 
     val data: DataFrame
-    def calcDf(): Column = col("smpN") - lit(1)
-    def smpMean(): Column = col("ybar").alias("yest")
-    def smpVar(): Column = {
-      (col("fpc") * (col("yvar") / col("smpN"))).alias("yvar")
-    }
     def tstat(alpha: Double) = udf((col: Double) => {
       new TDistribution(col).inverseCumulativeProbability(1 - (alpha / 2))
     })
+    def calcDf(): Column = col("smpN") - lit(1)
+    def smpMean(): Column = col("ybar").alias("yest")
+    def smpMVar(): Column = {
+      (col("fpc") * (col("yvar") / col("smpN"))).alias("yvarFpc")
+    }
+    def smpTotal(): Column = (col("ybar") * col("N")).alias("yest")
+    def smpTVar(): Column = 
+      (col("fpc") * pow(col("N"), 2) * (col("yvar") / col("smpN"))).alias("yvarFpc")
 
     def getEst(data: DataFrame, alpha: Double): DataFrame = {
        data
-        .withColumn("yse",  sqrt(col("yvar")))
+        .withColumn("yse",  sqrt(col("yvarFpc")))
         .withColumn("df", calcDf)
         .withColumn("tstat", tstat(alpha)(col("df")))
         .withColumn("width", col("tstat") * col("yse"))
         .withColumn("lb", col("yest") - col("width"))
         .withColumn("ub", col("yest") + col("width"))
-        .drop("width")
+        .select(data.columns(0), "yest", "yse", "lb", "ub",
+          "df", "tstat", "fpc",  "smpN", "N")
     }
-
-    // def summary(): DataFrame = data
-
-    /** Calculate the coefficient of variation. */
-    // def cv_(yest: Column, yse: Column): Column = yse / yest
-  
-    /** Return the population size. */
-    // def N(): Double = data.select(col("N_"))
-
-    /** Return the sample size. */
-    // def n(): Double = data.select(col("n"))
-
-    /** Return the number of strata. */
-    // def nstrata(): Long =  data.count
 
   }
 
@@ -82,17 +72,11 @@ object Compute {
   //   def svymean(alpha: Double = 0.05): DataFrame = getEst(__mdat, df, alpha)
   // }
 
-  // trait SVYTotal extends Survey {
-  //   def smpTotal(): Column = (col("ybar") * col("N_")).alias("yest")
-  //   def smpTVariance(): Column = 
-  //     (col("fpc") * pow(col("N_"), 2) * (col("yvar") / col("n"))).alias("yvar")
-  //   val __tdat = data.select(col(data.columns(1)), smpTotal, smpTVariance)
-  //     // .agg(sum("yest").alias("yest"), sum("yvar").alias("yvar"))
-  //   /** Calculate the survey mean, with standerd error and confidence intervals.
-  //    *  @param alpha The default value is 0.05 for 95% conidence intervals. 
-  //    *  */
-  //   def svytotal(alpha: Double = 0.05): DataFrame =  getEst(__tdat, df, alpha)
-  // }
+  trait SVYTotal extends Survey {
+    /** Calculate the survey mean, with standerd error and confidence intervals.
+     *  @param alpha The default value is 0.05 for 95% confidence intervals. 
+     *  */
+  }
 
 }
 

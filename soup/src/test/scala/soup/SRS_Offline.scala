@@ -44,20 +44,20 @@ class SRSDesignSuite extends munit.FunSuite {
       assertEquals(t1.select(round(col("ub"), 3)).first.getDouble(0), 0.564)
     }
 
-    // test("Agsrs means and totals should be expected") {
-    //   val srs = Summarize(srs_, y = col("acres92")).compute
-    //   val dsrs = Simple(srs)
-    //   val t1 = dsrs.svymean()
-    //   val t2 = dsrs.svytotal()
-    //   assertEquals(t1.select(round(col("yest"))).first.getDouble(0), 297897.0)
-    //   assertEquals(t1.select(round(col("yse"))).first.getDouble(0), 18898.0)
-    //   assertEquals(t1.select(round(col("lb"), 1)).first.getDouble(0), 260706.3)
-    //   assertEquals(t1.select(round(col("ub"), 1)).first.getDouble(0), 335087.8)
-    //   assertEquals(t2.select(round(col("yest"))).first.getDouble(0), 916927110.0)
-    //   assertEquals(t2.select(round(col("yse"))).first.getDouble(0), 58169381.0)
-    //   assertEquals(t2.select(round(col("lb"))).first.getDouble(0), 802453859.0)
-    //   assertEquals(t2.select(round(col("ub"))).first.getDouble(0), 1031400361.0)
-    // }
+    test("Agsrs means and totals should be expected") {
+      val srs = Summarize(srs_, y = "acres92").compute
+      val dsrs = Simple(srs)
+      val t1 = dsrs.svymean()
+      val t2 = dsrs.svytotal()
+      assertEquals(t1.select(round(col("yest"))).first.getDouble(0), 297897.0)
+      assertEquals(t1.select(round(col("yse"))).first.getDouble(0), 18898.0)
+      assertEquals(t1.select(round(col("lb"), 1)).first.getDouble(0), 260706.3)
+      assertEquals(t1.select(round(col("ub"), 1)).first.getDouble(0), 335087.8)
+      assertEquals(t2.select(round(col("yest"))).first.getDouble(0), 916927110.0)
+      assertEquals(t2.select(round(col("yse"))).first.getDouble(0), 58169381.0)
+      assertEquals(t2.select(round(col("lb"))).first.getDouble(0), 802453859.0)
+      assertEquals(t2.select(round(col("ub"))).first.getDouble(0), 1031400361.0)
+    }
 
     test("Agsrs means by grouping variable should be expected") {
       val srs = Summarize(strdat_, y = "acres92", strata = "region").compute
@@ -91,14 +91,3 @@ class SRSDesignSuite extends munit.FunSuite {
     }
 
 }
-// val dat = srs_.groupBy("lt200k")
-
-// val strata  = Option("lt200k")
-
-// val mdat  = strata match {
-//   case Some(x: String) => col(x)
-//   case None => lit(1)
-// }
-//
-//
-//
