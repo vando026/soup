@@ -4,7 +4,7 @@ class StratDesignSuit extends munit.FunSuite {
 
   import org.apache.spark.sql.{SparkSession, DataFrame, Column}
   import org.apache.spark.sql.functions._
-  // import conviva.soup.Design.{Stratified}
+  import conviva.soup.Design.{Stratified}
   import conviva.soup.Compute._
 
   val spark = SparkSession
@@ -20,7 +20,7 @@ class StratDesignSuit extends munit.FunSuite {
       .csv(s"$path/agstrat.csv")
       .withColumn("lt200k",
         when(col("acres92") < 2e5, 1).otherwise(0))
-      .withColumn("N_", 
+      .withColumn("N", 
         when(col("region") === "NE", 220.0)
         .when(col("region") === "NC", 1054.0)
         .when(col("region") === "S", 1382.0)
@@ -28,28 +28,28 @@ class StratDesignSuit extends munit.FunSuite {
 
 
     test("Agstr mean and total should be expected") {
-      // val strdat = Summarize(strdat_, y = col("acres92"), strata = col("region")).compute
-      // val dstr = Stratified(strdat)
-      // val t0 = dstr.svymean()
-      // val t1 = dstr.svytotal()
-      // assertEquals(t0("yest").ceil, 295561.0)
-      // assertEquals(t0("yse").ceil, 16380.0)
-      // assertEquals(t0("lb").ceil, 263325.0)
-      // assertEquals(t0("ub").ceil, 327797.0)
-      // assertEquals(t1("yest").toInt, 909736035)
-      // assertEquals(t1("yse").toInt, 50417248)
-      // assertEquals(t1("lb").toInt, 810514349)
-      // assertEquals(t1("ub").toInt, 1008957720)
+      val strdat = Summarize(strdat_, y = "acres92", strata = "region").compute
+      val dstr = Stratified(strdat)
+      val t0 = dstr.svymean()
+      val t1 = dstr.svytotal()
+      assertEquals(t0.select(round(col("yest"))).first.getDouble(0), 295561.0)
+      assertEquals(t0.select(round(col("yse"))).first.getDouble(0), 16380.0)
+      assertEquals(t0.select(round(col("lb"))).first.getDouble(0), 263325.0)
+      assertEquals(t0.select(round(col("ub"), 1)).first.getDouble(0), 327796.5)
+      assertEquals(t1.select(round(col("yest"))).first.getDouble(0), 909736035.0)
+      assertEquals(t1.select(round(col("yse"))).first.getDouble(0), 50417248.0)
+      assertEquals(t1.select(round(col("lb"))).first.getDouble(0), 810514350.0)
+      assertEquals(t1.select(round(col("ub"))).first.getDouble(0), 1008957721.0)
     }
 
     test("Agstr props should be expected") {
-      // val strdat = Summarize(strdat_, y = col("lt200k"), strata = col("region")).compute
-      // val ltstr = Stratified(strdat)
-      // val t1 = ltstr.svymean()
-      // assertEquals((t1("yest") * 10000).round.toDouble/10000, 0.5139)
-      // assertEquals((t1("yse") * 10000).round.toDouble/10000, 0.0248)
-      // assertEquals((t1("lb") * 1000).round.toDouble/1000, 0.465)
-      // assertEquals((t1("ub") * 1000).round.toDouble/1000, 0.563)
+      val strdat = Summarize(strdat_, y = "lt200k" , strata =  "region" ).compute
+      val ltstr = Stratified(strdat)
+      val t1 = ltstr.svymean()
+      assertEquals(t1.select(round(col("yest"), 4)).first.getDouble(0), 0.5139)
+      assertEquals(t1.select(round(col("yse"),4)).first.getDouble(0), 0.0248)
+      assertEquals(t1.select(round(col("lb"), 4)).first.getDouble(0), 0.4651)
+      assertEquals(t1.select(round(col("ub"), 4)).first.getDouble(0), 0.5627)
     }
 
 }

@@ -14,13 +14,21 @@ object Design {
     def svytotal(alpha: Double = 0.05): DataFrame =  getEst(totData, alpha)
   }
 
-  // case class Stratified(data: DataFrame) extends Survey with SVYMean with SVYTotal {
-  //   val df: Double = n() - nstrata() 
-  //   override def smpMean(): Column = (col("ybar") * col("N_") / col("allN").alias("yest"))
-  //   override def smpMVariance(): Column = {
-  //     (col("fpc") * pow(col("N_")/N(), 2) * (col("yvar") / col("n"))).alias("yvar")
-  //   }
-  // }
+  case class Stratified(data: DataFrame) extends Survey {
+    override def calcDf: Column = col("smpN") - lit(data.count)
+    val bigN = data.select(sum("N")).first.getDouble(0)
+    override def smpMean(): Column = (col("ybar") * col("N") / lit(bigN)).alias("yest")
+    override def smpMVar(): Column = {
+      (col("fpc") * pow(col("N") / lit(bigN), 2) * (col("yvar") / col("smpN"))).alias("yvarFpc")
+    }
+    val vars = List("yest", "yvarFpc", "smpN", "N").map(i => sum(col(i)).alias(i))
+    val meanData = data.select(smpMean, smpMVar, col("smpN"), col("N"))
+      .agg(vars.head, vars.tail:_*)
+    def svymean(alpha: Double = 0.05): DataFrame = getEst(meanData, alpha)
+    val totData = data.select(smpTotal, smpTVar, col("smpN"), col("N"))
+      .agg(vars.head, vars.tail:_*)
+    def svytotal(alpha: Double = 0.05): DataFrame =  getEst(totData, alpha)
+  }
 
 
 // case class Clust2Stage(data: DataFrame) {

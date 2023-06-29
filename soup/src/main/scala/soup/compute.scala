@@ -57,7 +57,7 @@ object Compute {
         .withColumn("lb", col("yest") - col("width"))
         .withColumn("ub", col("yest") + col("width"))
         .select(data.columns(0), "yest", "yse", "lb", "ub",
-          "df", "tstat", "fpc",  "smpN", "N")
+          "df", "tstat", "smpN", "N")
     }
 
   }
