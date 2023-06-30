@@ -1,5 +1,11 @@
 package conviva.soup
 
+/* TODO: Add N parameter to Summarize
+ *  return N as value
+ *  return data
+ * Have different Summarize for Cluster
+ * Ratio estimation
+*/
 
 object Compute {
 
@@ -7,12 +13,15 @@ object Compute {
   import org.apache.spark.sql.{SparkSession, DataFrame, Column}
   import org.apache.spark.sql.functions._
 
-  /** Prepare the data for estimation by taking mean and variance of y with n
-   *  and N. 
+  /** Prepare the data for estimation by taking mean and variance of y with
+   *  sample size smpN and population size N. 
    *  @param data The input dataframe. 
-   *  @param y The quantity or variable to estimate.
+   *  @param y The column name of the quantity or variable to estimate.
+   *  @param N The column name for the population size.
+   *  @param strata  The name of the column to stratify or group the estimates by.
    *  */
-  case class Summarize(dat: DataFrame, y: String, strata: String = "") {
+  case class Summarize(
+      dat: DataFrame, y: String, N: String = "N", strata: String = "") {
     def compute(): DataFrame = {
       assert(dat.columns.contains("N"), "Column called N required for population total.")
       val byVar = strata match {
@@ -21,9 +30,9 @@ object Compute {
       }
       dat.groupBy(byVar).agg(
         mean(col(y)).alias("ybar"),
-        variance(y).alias("yvar"),
-        count("*").cast("double").alias("smpN"),
-        first("N").alias("N")
+        variance(col(y)).alias("yvar"),
+        count(lit(1)).cast("double").alias("smpN"),
+        first(col(N)).alias("N")
       )
       .withColumn("fpc", lit(1) - (col("smpN") / col("N")))
     }
@@ -56,8 +65,7 @@ object Compute {
         .withColumn("width", col("tstat") * col("yse"))
         .withColumn("lb", col("yest") - col("width"))
         .withColumn("ub", col("yest") + col("width"))
-        .select(data.columns(0), "yest", "yse", "lb", "ub",
-          "df", "tstat", "smpN", "N")
+        .select(data.columns(0), "yest", "yse", "lb", "ub", "df", "tstat")
     }
   }
 
