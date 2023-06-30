@@ -4,7 +4,7 @@ package conviva.soup
 object Design {
 
   import org.apache.spark.sql.{DataFrame, Column}
-  import org.apache.spark.sql.functions.{pow, lit, col, sum}
+  import org.apache.spark.sql.functions.{pow, lit, col, sum, mean, first}
   import conviva.soup.Compute._
 
   case class Simple(data: DataFrame) extends Survey  {
@@ -31,46 +31,33 @@ object Design {
   }
 
 
-// case class Clust2Stage(data: DataFrame) {
-//   import org.apache.commons.math3.distribution.TDistribution
-//   import org.apache.spark.sql.{SparkSession, DataFrame, Column}
-//   import org.apache.spark.sql.functions._
-//   import org.apache.commons.math3.distribution.TDistribution
+case class Clust2Stage(data: DataFrame) extends Survey {
+  import org.apache.spark.sql.expressions.Window
+  val dw = Window.partitionBy(lit(1))
+  // val n = data.count
+  override def calcDf = lit(data.count - 1)
+  // calculate ytot and yvar
 
-//   private def getEst(yest: Double, yvar: Double, df: Double,  
-//       alpha: Double): Map[String, Double] = {
-//     val tstat = new TDistribution(df)
-//       .inverseCumulativeProbability(1 - (alpha/2))
-//     lazy val yse = math.sqrt(yvar)
-//     lazy val width = tstat * yse
-//     lazy val lb = yest - width
-//     lazy val ub = yest + width
-//     Map("yest" -> yest, "yvar" -> yvar, "yse" -> yse, "lb" -> lb, "ub" -> ub)
-//   }
+  // see table 5.7 for calc in Lohr
+  val allN = data.select(sum(col("N"))).first.getLong(0).toDouble
+  val smallN = data.select(sum(col("smpN"))).first.getLong(0).toDouble
+  // col 5
+  val cdat = data
+    .withColumn("ytot", col("ybar") * col("N"))
+  val ytotSum = cdat.select(sum(col("ytot"))).first.getDouble(0)
+  val yest = ytotSum / allN
+  val cdat1 = cdat.withColumn("s2r", pow((col("ybar") - lit(yest)), 2) * pow(col("N"), 2))
+  val s2r = cdat1.select(sum(col("s2r"))).first.getDouble(0) / (data.count - 1)
+  val mbar = cdat1.select(mean(col("N"))).first.getDouble(0)
+  val yse = s2r / (data.count * mbar * mbar)
+  val mdat = cdat1.select(first("schoolid").alias("dummy"))
+    .withColumn("yest", lit("yest"))
+    .withColumn("yvarFpc", lit("yse"))
+    .withColumn("smpN", lit(data.count))
+    .withColumn("N", lit(allN))
 
-//   // calculate ytot and yvar
-//   val __dat = data.withColumn("ytot", col("ybar") * col("Mi_"))
-
-//   val n = __dat.count
-//   val df = n - 1
-
-//   val yest = __dat.select(sum("ytot")/sum("Mi_"))
-//     .first.getDouble(0)
-
-//   // between cluster variance
-//   val yssb = __dat
-//     .withColumn("s2r",
-//       pow((col("ybar") - lit(yest)), 2) * pow(col("Mi_"), 2))
-//     .agg(sum("s2r"))
-//     .first.getDouble(0)
-
-//   val s2r = yssb * (1.0 / df)
-//   val mbar = __dat.agg(mean("Mi_")).first.getDouble(0)
-//   val yvwr = s2r / (n *  mbar * mbar)
-
-//   def svymean(alpha: Double = 0.05): Map[String, Double] =
-//     getEst(yest, yvwr, df, alpha)
-// }
+  def svymean(alpha: Double = 0.05): DataFrame = getEst(mdat, alpha)
+}
 
 
 
