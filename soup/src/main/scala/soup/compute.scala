@@ -35,6 +35,7 @@ object Compute {
         first(col(N)).alias("N")
       )
       .withColumn("fpc", lit(1) - (col("smpN") / col("N")))
+      .withColumn("weight", col("N") / col("smpN"))
     }
   }
 
