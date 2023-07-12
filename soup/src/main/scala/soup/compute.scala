@@ -30,9 +30,10 @@ object Compute {
       }
       dat.groupBy(byVar).agg(
         mean(col(y)).alias("ybar"),
+        sum(col(y)).cast("double").alias("ysum"),
         variance(col(y)).alias("yvar"),
         count(lit(1)).cast("double").alias("smpN"),
-        first(col(N)).alias("N")
+        first(col("N")).alias("N")
       )
       .withColumn("fpc", lit(1) - (col("smpN") / col("N")))
       .withColumn("weight", col("N") / col("smpN"))
@@ -50,11 +51,11 @@ object Compute {
       new TDistribution(col).inverseCumulativeProbability(1 - (alpha / 2))
     })
     def calcDf(): Column = col("smpN") - lit(1)
-    def smpMean(): Column = col("ybar").alias("yest")
+    def smpMean(): Column = ((col("ysum") * col("weight")) / col("N")).alias("yest")
     def smpMVar(): Column = {
       (col("fpc") * (col("yvar") / col("smpN"))).alias("yvarFpc")
     }
-    def smpTotal(): Column = (col("ybar") * col("N")).alias("yest")
+    def smpTotal(): Column = (col("ysum") * col("weight")).alias("yest")
     def smpTVar(): Column = 
       (col("fpc") * pow(col("N"), 2) * (col("yvar") / col("smpN"))).alias("yvarFpc")
 
