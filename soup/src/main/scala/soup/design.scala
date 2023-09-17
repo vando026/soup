@@ -14,6 +14,7 @@ object Design {
     def svytotal(alpha: Double = 0.05): DataFrame =  getEst(totData, alpha)
   }
 
+
   case class Stratified(data: DataFrame) extends Survey {
     override def calcDf: Column = col("smpN") - lit(data.count)
     val bigN = data.select(sum("N")).first.getDouble(0)

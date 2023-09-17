@@ -69,28 +69,25 @@ class SRSDesignSuite extends munit.FunSuite {
       // val t0 = dsrs.svytotal()
       assertEquals(
         srs.where(col("region") === "NE")
-        .select(round(col("ybar"), 1)).first.getDouble(0), 97629.8
-      )
+        .select(round(col("ybar"), 1)).first.getDouble(0), 97629.8)
+      assertEquals(
+        srs.where(col("region") === "NC")
+        .select(round(col("ybar"), 1)).first.getDouble(0), 300504.2)
       assertEquals(
         srs.where(col("region") === "W")
-        .select(round(col("yvar"))).first.getDouble(0), 396185950266.0
-      )
+        .select(round(col("yvar"))).first.getDouble(0), 396185950266.0)
       assertEquals(
         t1.where(col("region") === "NE")
-        .select(round(col("yest"), 1)).first.getDouble(0), 97629.8
-      )
+        .select(round(col("yest"), 1)).first.getDouble(0), 97629.8)
       assertEquals(
         t1.where(col("region") === "W")
-        .select(round(col("yest"), 1)).first.getDouble(0), 662295.5
-      )
+        .select(round(col("yest"), 1)).first.getDouble(0), 662295.5)
       assertEquals(
         t1.where(col("region") === "NE")
-        .select(round(col("yse"), 1)).first.getDouble(0), 18149.5
-      )
+        .select(round(col("yse"), 1)).first.getDouble(0), 18149.5)
       assertEquals(
         t1.where(col("region") === "S")
-        .select(round(col("yse"), 1)).first.getDouble(0), 18925.4
-      )
+        .select(round(col("yse"), 1)).first.getDouble(0), 18925.4)
     }
 
 }
