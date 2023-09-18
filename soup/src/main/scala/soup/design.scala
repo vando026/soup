@@ -8,12 +8,28 @@ object Design {
   import conviva.soup.Compute._
 
   case class Simple(data: DataFrame) extends Survey  {
+
     val meanData = data.select(data.col("*"), smpMean, smpMVar)
     def svymean(alpha: Double = 0.05): DataFrame = getEst(meanData, alpha)
     val totData = data.select(data.col("*"), smpTotal, smpTVar)
     def svytotal(alpha: Double = 0.05): DataFrame =  getEst(totData, alpha)
   }
 
+  case class Ratio(dat: DataFrame, N: String = "N", strata: String, num: String, den: String) {
+    spark.conf.set("spark.sql.caseSensitive", true)
+    def compute = dat.groupBy(strata)
+      .agg(
+        sum(num).alias(num),
+        sum(den).alias(den), 
+        avg(den).alias("xbar"),
+        count(lit(1)).alias("n"))
+      .withColumn("yest", col("num") / col("den"))
+      .withColumn("fpc", lit(1) - (col("n") / col(N)))
+      .withColumn("Var", var(col("num") - (col("yest") * col("den"))))
+      .withColumn("term1", col("n") * col("xbar") * col("xbar"))
+      .withColumn("SE", sqrt( col("fpc") * (col("Var") / col("term1"))))
+
+  }
 
   case class Stratified(data: DataFrame) extends Survey {
     override def calcDf: Column = col("smpN") - lit(data.count)
