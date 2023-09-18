@@ -1,6 +1,5 @@
 package conviva.soup 
 
-
 object Design {
 
   import org.apache.spark.sql.{DataFrame, Column}
@@ -13,7 +12,6 @@ object Design {
     val totData = data.select(data.col("*"), smpTotal, smpTVar)
     def svytotal(alpha: Double = 0.05): DataFrame =  getEst(totData, alpha)
   }
-
 
   case class Stratified(data: DataFrame) extends Survey {
     override def calcDf: Column = col("smpN") - lit(data.count)
