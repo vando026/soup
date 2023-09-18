@@ -66,7 +66,7 @@ object Design2 {
 
   def svyratio(num: Column, den: Column, design: Design): DataFrame = { 
     val y = design.summary(num)
-      .select("strata", "ybar", "fpc", "smpSize", "popSize")
+      .select("strata", "ybar", "fpc", "smpSize")
     val x = design.summary(den)
       .select(col("strata"), col("ybar").alias("xbar"))
     val xydat = y.join(x, List("strata"), "inner")
