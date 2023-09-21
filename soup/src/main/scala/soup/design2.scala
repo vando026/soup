@@ -8,7 +8,7 @@ object Design2 {
 
   case class Design(
        dat: DataFrame,
-       popSize: Column,
+       popSize: Column = null,
        strata: Column = null,
        weights: Column = null,
        alpha: Double = 0.05) {
@@ -16,6 +16,7 @@ object Design2 {
     val strataVar = Option(strata).getOrElse(lit(1))
     val wtVar = Option(weights).getOrElse(col("popSize") / col("smpSize"))
     val fpc = lit(1) - (col("smpSize") / col("popSize"))
+    val popSizeVar = Option(popSize).getOrElse(col("smpSize") * wtVar) 
     //
     def tstat(alpha: Double) = udf((col: Double) => {
       new TDistribution(col).inverseCumulativeProbability(1 - (alpha / 2))
