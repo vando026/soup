@@ -6,23 +6,23 @@ object Design2 {
   import org.apache.spark.sql.{SparkSession, DataFrame, Column}
   import org.apache.spark.sql.functions._
 
-  case class Design(
-       dat: DataFrame,
-       popSize: Column = null,
-       strata: Column = null,
-       weights: Column = null,
-       alpha: Double = 0.05) {
-    //
-    val strataVar = Option(strata).getOrElse(lit(1))
-    val wtVar = Option(weights).getOrElse(col("popSize") / col("smpSize"))
-    val fpc = lit(1) - (col("smpSize") / col("popSize"))
-    val popSizeVar = Option(popSize).getOrElse(col("smpSize") * wtVar) 
+  trait Design {
+    val dat: DataFrame
+    val popSize: Column
+    val weights: Column = null
+    val strata: Column = null
+    val alpha: Double = 0.05
     //
     def tstat(alpha: Double) = udf((col: Double) => {
       new TDistribution(col).inverseCumulativeProbability(1 - (alpha / 2))
     })
+    val strata_ = Option(strata).getOrElse(lit(1))
+    val weight_ = Option(weights).getOrElse(col("popSize") / col("smpSize"))
+    val fpc = lit(1) - (col("smpSize") / col("popSize"))
+    //
     def summary(y: Column): DataFrame = {
-      dat.withColumn("strata", strataVar)
+      dat
+        .withColumn("strata", strata_)
         .groupBy("strata").agg(
           mean(y).alias("ybar"),
           sum(y).cast("double").alias("ysum"),
@@ -31,7 +31,7 @@ object Design2 {
           first(popSize).alias("popSize")
         )
       .withColumn("fpc", fpc)
-      .withColumn("weight", wtVar)
+      .withColumn("weight", weight_)
     }
     //
     def calcDf(): Column = col("smpSize") - lit(1)
@@ -47,7 +47,7 @@ object Design2 {
     }
   }
 
-  def svymean(y: Column, design: Design): DataFrame = {
+  def svymean(y: Column, design: SvyDesign): DataFrame = {
     val dat0 = design.summary(y)
     def smpMean(): Column = ((col("ysum") * col("weight")) / col("popSize")).alias("yest")
     def smpMVar(): Column = (col("fpc") * (col("yvar") / col("smpSize"))).alias("yvarFpc")
@@ -55,7 +55,7 @@ object Design2 {
     design.getEst(meanData) 
   }
 
-  def svytotal(y: Column, design: Design): DataFrame = {
+  def svytotal(y: Column, design: SvyDesign): DataFrame = {
     val dat0 = design.summary(y)
     def smpTotal(): Column = (col("ysum") * col("weight")).alias("yest")
     def smpTVar(): Column = 
@@ -65,15 +65,15 @@ object Design2 {
   }
 
 
-  def svyratio(num: Column, den: Column, design: Design): DataFrame = { 
+  def svyratio(num: Column, den: Column, design: SvyDesign): DataFrame = { 
     val y = design.summary(num)
-      .select("strata", "ybar", "fpc", "smpSize")
+      .select("strata", "ybar", "fpc", "smpSize", "popSize")
     val x = design.summary(den)
       .select(col("strata"), col("ybar").alias("xbar"))
     val xydat = y.join(x, List("strata"), "inner")
       .withColumn("ratio", col("ybar") / col("xbar"))
     val sdat = design.dat
-      .withColumn("strata", design.strataVar)
+      .withColumn("strata", design.strata_)
       .join(xydat, List("strata"), "left")
       .withColumn("residuals", (num - (col("ratio") * den)))
 
@@ -87,7 +87,6 @@ object Design2 {
       )
       .withColumn("term1", col("smpSize") * col("xbar") * col("xbar"))
       .withColumn("yvarFpc", col("fpc") * (col("resid") / col("term1")) )
-      .select("strata", "yest", "smpSize", "popSize", "yvarFpc")
       design.getEst(ratioDat)
   }
 

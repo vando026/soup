@@ -31,16 +31,21 @@ class SRSDesignSuite2 extends munit.FunSuite {
         .when(col("region") === "W", 422.0))
 
     test("Agsrs props should be expected") {
-      val srs = Design(agsrs, popSize = col("N"))
+      val srs = SvyDesign(agsrs, popSize = col("N"))
       val t1 = svymean(y = col("lt200k"), srs)
       assertEquals(t1.select("yest").first.getDouble(0), 0.51)
       assertEquals(t1.select(round(col("yse"), 4)).first.getDouble(0), 0.0275)
       assertEquals(t1.select(round(col("lb"), 3)).first.getDouble(0), 0.456)
       assertEquals(t1.select(round(col("ub"), 3)).first.getDouble(0), 0.564)
+      val srs1 = SvyDesign(agsrs, popSize = col("N"), weights = lit(3078.0 / 300))
+      val t2 = svymean(y = col("lt200k"), srs1)
+      assertEquals(t2.select("yest").first.getDouble(0), 0.51)
+      assertEquals(t2.select(round(col("yse"), 4)).first.getDouble(0), 0.0275)
+      assertEquals(t2.select(round(col("lb"), 3)).first.getDouble(0), 0.456)
     }
 
     test("Agsrs means and totals should be expected") {
-      val dsrs = Design(agsrs, popSize = col("N"))
+      val dsrs = SvyDesign(agsrs, popSize = col("N"))
       val srs = dsrs.summary(col("acres92"))
       val t1 = svymean(col("acres92"), dsrs)
       val t2 = svytotal(col("acres92"), dsrs)
@@ -58,7 +63,7 @@ class SRSDesignSuite2 extends munit.FunSuite {
     }
 
     test("Agsrs means by grouping variable should be expected") {
-      val dsrs = Design(agstrat, popSize = col("N"),  strata = col("region"))
+      val dsrs = SvyDesign(agstrat, popSize = col("N"),  strata = col("region"))
       val srs = dsrs.summary(col("acres92"))
       val t1 = svymean(col("acres92"), dsrs)
       // val t0 = dsrs.svytotal()
@@ -87,10 +92,38 @@ class SRSDesignSuite2 extends munit.FunSuite {
 
 
     test("Agsrs svyratio and standard errors should be expected") {
-      val srs = Design(agsrs, popSize = col("N"))
+      val srs = SvyDesign(agsrs, popSize = col("N"))
       val t1 = svyratio(col("acres92"), col("acres87"), srs)
       assertEquals(t1.select(round(col("yest"), 6)).first.getDouble(0), 0.986565)
       assertEquals(t1.select(round(col("yse"), 6)).first.getDouble(0), 0.005750)
     }
+
+    val design = srs
+    val num =  col("acres92")
+    val den =  col("acres87")
+    
+    val y = design.summary(num)
+      .select("strata", "ybar", "fpc", "smpSize", "popSize")
+    val x = design.summary(den)
+      .select(col("strata"), col("ybar").alias("xbar"))
+    val xydat = y.join(x, List("strata"), "inner")
+      .withColumn("ratio", col("ybar") / col("xbar"))
+    val sdat = design.dat
+      .withColumn("strata", design.strata_)
+      .join(xydat, List("strata"), "left")
+      .withColumn("residuals", (num - (col("ratio") * den)))
+
+    val ratioDat = sdat.groupBy("strata").agg(
+        variance(col("residuals")).alias("resid"),
+        first("ratio").alias("yest"),
+        first("xbar").alias("xbar"),
+        first("fpc").alias("fpc"),
+        first("smpSize").alias("smpSize"),
+        first("popSize").alias("popSize")
+      )
+      .withColumn("term1", col("smpSize") * col("xbar") * col("xbar"))
+      .withColumn("yvarFpc", col("fpc") * (col("resid") / col("term1")) )
+      .select(col("strata").alias(design.strata), col("yest"), 
+        col("smpSize"), col("popSize"), col("yvarFpc"))
 
 }
