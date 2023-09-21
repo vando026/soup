@@ -94,14 +94,15 @@ object Design2 {
 
   case class STRS(dat: DataFrame, popSize: Column, weights: Column = null, 
       strata: Column = null, alpha: Double = 0.05 ) extends Design { 
-    override def calcDf: Column = col("smpN") - lit(dat.count)
-    val bigN = dat.select(sum(popSize)).first.getDouble(0)
-    val vars = List("yest", "yvarFpc", "smpSize", "popSize")
+    private val sdat = dat.groupBy("region").agg(first(popSize))
+    private val bigN = sdat.agg(sum("first(N)")).first.getDouble(0)
+    override def calcDf: Column = col("smpSize") - lit(sdat.count)
+    private val vars = List("yest", "yvarFpc", "smpSize", "popSize")
       .map(i => sum(col(i)).alias(i))
     //
     override def smpMean(): Column = (col("ybar") * col("popSize") / lit(bigN)).alias("yest")
     override def smpMVar(): Column = {
-      (col("fpc") * pow(col("N") / lit(bigN), 2) * (col("yvar") / col("smpSize"))).alias("yvarFpc")
+      (col("fpc") * pow(col("popSize") / lit(bigN), 2) * (col("yvar") / col("smpSize"))).alias("yvarFpc")
     }
     def svymean(y: Column): DataFrame = {
       val data = summary(y)
