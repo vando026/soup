@@ -8,10 +8,10 @@ A Scala library to estimate totals, means, and ratios from simple random sample 
 
 ### Simple random sample designs
 
-For simple random sample (SRS) designs, use the `SRS` class, which requires a `DataFrame` and `Column` representing the sampling weights. 
+For simple random sample (SRS) designs, use the `SRS` class, which requires a `DataFrame` and `Column` representing the population size. 
 
 ```scala 
-val srs = SRS(agdat, popSize = col("N"), weights = lit(3078/300))
+val srs = SRS(agdat, popSize = col("N"))
 ```
 
 To estimate the mean, use the `svymean` method:
