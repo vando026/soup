@@ -18,7 +18,7 @@ object Stats {
     })
     val strata_ = Option(strata).getOrElse(lit(1))
     val weight_ = Option(weights).getOrElse(col("popSize") / col("smpSize"))
-    val fpc = lit(1) - (col("smpSize") / col("popSize"))
+    val fpc = lit(1) - (lit(1) / weight_)
     //
     def summary(y: Column): DataFrame = {
       dat
@@ -49,7 +49,7 @@ object Stats {
         .withColumn("width", col("tstat") * col("yse"))
         .withColumn("lb", col("yest") - col("width"))
         .withColumn("ub", col("yest") + col("width"))
-        .select(data.columns(0), "yest", "yse", "lb", "ub", "df", "tstat", "smpSize", "popSize")
+        .select(data.columns(0), "yest", "yse", "lb", "ub", "df", "tstat")
     }
   }
 

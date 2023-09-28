@@ -4,7 +4,7 @@ class StratDesignSuit extends munit.FunSuite {
 
   import org.apache.spark.sql.{SparkSession, DataFrame, Column}
   import org.apache.spark.sql.functions._
-  import conviva.soup.Design2.{STRS}
+  import conviva.soup.Design.STRS
 
   val spark = SparkSession
     .builder()
@@ -51,41 +51,3 @@ class StratDesignSuit extends munit.FunSuite {
 
 }
 
-/*
-val dat = strdat_
-val data = dstr.summary(col("acres92"))
-val popSize = col("N")
-val y = col("acres92")
-
-   val sdat = dat.groupBy("region").agg(first(popSize))
-   val bigN = sdat.agg(sum("first(N)")).first.getDouble(0)
-   def calcDf: Column = col("smpSize") - lit(sdat.count)
-    val vars = List("yest", "yvarFpc", "smpSize", "popSize")
-     .map(i => sum(col(i)).alias(i))
-   //
-   def smpMean(): Column = (col("ybar") * col("popSize") / lit(bigN)).alias("yest")
-   def smpMVar(): Column = {
-     (col("fpc") * pow(col("popSize") / lit(bigN), 2) * (col("yvar") / col("smpSize"))).alias("yvarFpc")
-   }
-     val d1 = dstr.summary(y)
-     val meanData = d1.select(smpMean, smpMVar, col("smpSize"), col("popSize"))
-       .agg(vars.head, vars.tail:_*)
-       meanData
-        .withColumn("yse",  sqrt(col("yvarFpc")))
-        .withColumn("df", calcDf)
-        .withColumn("tstat", tstat(alpha)(col("df")))
-        .withColumn("width", col("tstat") * col("yse"))
-        .withColumn("lb", col("yest") - col("width"))
-        .withColumn("ub", col("yest") + col("width"))
-        .select(data.columns(0), "yest", "yse", "lb", "ub", "df", "tstat", "smpSize", "popSize")
-   }
-   //
-   def svytotal(y: Column): DataFrame =  {
-     val data = summary(y)
-     val totData = data.select(smpTotal, smpTVar, col("smpSize"), col("popSize"))
-         .agg(vars.head, vars.tail:_*)
-     getEst(totData)
-   }
-
-  // }
-*/

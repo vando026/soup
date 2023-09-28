@@ -1,16 +1,24 @@
-### Conviva data
+The second demo uses Conviva 1-minute data. Consider this to be the census data. 
 
-The second demo uses Conviva 1 minute data for June 2023, 19:20.
-Consider this to be the census data. 
+```scala mdoc
+import org.apache.spark.sql.{SparkSession}
+import org.apache.spark.sql.functions._
+import conviva.soup.Design._
 
-```scala 
+val spark = SparkSession.builder
+  .master("local[*]")
+  .getOrCreate
+
+// use test dataset for demo
+val path = "./soup/src/test/data"
+
 val pdat = spark.read.parquet(s"$path/tlb_ssm101_23_06_19_20.parquet")
 pdat.columns
 ```
 
 First calculate the population quantities from the census data. 
 
-```scala  
+```scala mdoc
 // Calculate population quantities
 val N = pdat.count.toDouble
 
@@ -26,7 +34,7 @@ popVars.show
 
 Now, we need to impose some sampling strategy on this data. Sessions were randomly assigned to clusterId using a uniform distribution. Therefore, we can simulate a SRS design by dropping `custId = 2` and using the remaining two clusters to estimate the population quantities. 
 
-```scala  
+```scala mdoc
 // drop cluster 2
 val smpdat = pdat.where(col("cluId") =!= 2)
 // add column with popSize N (required)
@@ -36,22 +44,14 @@ val smpdat1 = smpdat
     .withColumn("hasJoined", col("life_hasJoined").cast("integer"))
 ``` 
 
-We are ready to use the `Summarize` and `Simple` classes for estimation. The
+We can use  the `SRS` class for estimation. The
 below code estimates the  number of `isEnded` and `hasJoined` sessions from the
 sample data. 
 
-```scala 
-val ended = Summarize(smpdat1, y = "isEnded").compute
-ended.show
-
-val smpEnded = Simple(ended)
-smpEnded.svytotal()
+```scala mdoc
+val srs = SRS(smpdat1, popSize = col("N"))
+srs.svytotal(col("isEnded")).show
+srs.svytotal(col("hasJoined")).show
 ```
 
-```scala 
-val joined = Summarize(smpdat1, y = "hasJoined").compute
-joined.show
-val smpJoined = Simple(joined)
-smpJoined.svytotal()
-```
 

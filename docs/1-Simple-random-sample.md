@@ -1,19 +1,15 @@
-## Simple Random Sample: Estimation
+This page demonstrates how to estimate population quantities using data from a simple
+random sample (SRS).
 
-This page demonstrates how to estimate population quantities for a simple
-random sample (SRS) using the `Simple` object from `soup`. 
+### Demo: agricultural data
 
-### Agricultural data
+For demonstration, I use data collected from a simple random sample of 300
+farms from a population of 3078 farms in the United States.  The column
+`acres92` and  `acres87` are the number of acres each farm has for 1992 and
+1987, respectively. I create a third column (`lt200k`), which assigns a farm
+the value 1 if the farm has greater than 200,000 acres, otherwise 0.
 
-This first demo shows how to estimate means, proportions and totals from a
-simple random sample (SRS) design using agricultural data.  To estimate means
-and totals, I use the  column `acres92`, which  is the number of acres for 300
-farms randomly sampled in 1992. To estimate proportions,  I create a column
-where acres > 200,000 are coded as a  1 otherwise 0. The total number of farms
-in the census is 3078.
-
-
-
+The code below imports the soup `Design` object and reads the data.
 ```scala mdoc 
 
 import org.apache.spark.sql.{SparkSession, DataFrame, Column}
@@ -28,66 +24,86 @@ val spark = SparkSession.builder
 val path = "./soup/src/test/data"
 
 // read in the data
-val sdat = spark.read
+val agdat = spark.read
   .option("inferSchema", "true")
   .option("header", "true")
-  .csv(s"$path/agsrs.csv")
+  .csv(s"$path/agsrs2.csv")
   .select(
     col("acres92"),
+    col("acres87"),
     when(col("acres92") < 2e5, 1).otherwise(0).alias("lt200k")
   )
   .withColumn("N", lit(3078.0))
-sdat.show
+agdat.limit(5).show
 ```
 
-The `SRS` class takes a `DataFrame` and a `Column` representing the population size (`popSize`) as arguments. 
+### Estimation
+
+This section shows how to estimate means (proportions), totals, and ratios
+using the `SRS` class.  The `SRS` class requires a `DataFrame` and a `Column`
+representing the population size (`popSize`) as arguments. 
+
+```scala mdoc
+val srs = SRS(agdat, popSize = col("N"), weights = lit(3078/300))
+```
+
+The sampling weights (w = N/n) are computed using the sample size of the data (n = `smpSize`) and the population size (N = `popSize`). You can override this computation by providing your own weight as an argument, which must be a `Column` class. A finite population correction (FPC) factor will also be calculated. For confidence intervals, shown later, the default alpha value is 0.05, which you can change with the `alpha` parameter.
+
+
+Given an `SRS` instance, you can estimate the mean of a quantity using `svymean`:
+
+```scala mdoc
+val ac92mean = srs.svymean(y = col("acres92"))
+ac92mean.show
+```
+or the total using `svytotal`:
+```scala mdoc
+val ac92tot = srs.svytotal(y = col("acres92"))
+ac92tot.show
+```
+
+The `svymean` method also works for proportions:
+
+```scala mdoc
+val ac92prop = srs.svymean(y = col("lt200k"))
+ac92prop.show
+```
+
+To estimate the ratio, use the `svyratio` method. 
 
 ```scala mdoc 
-SRS(sdat, popSize = col("N"))
+val acrat = srs.svyratio(num = col("acres92"), den = col("acres87"))
+acrat.show
 ```
 
-The sampling weights (w = N/n) are computed using the sample size of the data (n = `smpSize`) and the population size (N = `popSize`). You can override this computation by providing your own weight as an argument, which must be a constant `lit(weight)`.
+### Estimation by strata
 
+To estimate means (proportions) or totals by strata, pass an argument to the
+`strata` parameter. To demonstrate, I read in agricultural data stratified by
+region. 
 
 ```scala mdoc 
-SRS(sdat, popSize = col("N"), weights = lit(3078/300))
+val agstrat = spark.read
+  .option("inferSchema", "true")
+  .option("header", "true")
+  .csv(s"$path/agstrat.csv")
+  .withColumn("N", 
+    when(col("region") === "NE", 220.0)
+    .when(col("region") === "NC", 1054.0)
+    .when(col("region") === "S", 1382.0)
+    .when(col("region") === "W", 422.0))
 ```
 
-The 
-variance of `acres92`  with the finite population correction (FPC) factor. You
-can specify any column name, but you must make sure you pass a column called
-`N`, which represents the population total.
+Now pass the argument to `strata`:
 
 ```scala mdoc
-val srs = SRS(sdat, popSize = col("N"))
+val tsrs = SRS(agstrat, popSize = col("N"), strata = col("region"))
 ```
 
-The `Simple` class is used to obtain estimates from a SRS design. To
-compute either the estimated mean or total, use the `svymean` and `svytotal` methods respectively. 
+And call `svymean` or `svytotal`:
 
 ```scala mdoc
-val acr92mean = srs.svymean(y = col("acres92"))
-acr92mean.show
-val acr92total = srs.svytotal(y = col("acres92"))
-acr92total.show
-```
-
-The methods also work for proportions.
-
-```scala mdoc
-val ltsrs = SRS(sdat, popSize = col("N"))
-// ltsrs.show
-val lt200mean = ltsrs.svymean(y = col("lt200k"))
-lt200mean.show
-val lt200total = ltsrs.svytotal(y = col("lt200k"))
-lt200total.show
-```
-
-Note that you can specify the alpha value to calculate confidence intervals as
-follows (the default alpha is 0.05).
-
-```scala 
-val t3 = ltsrs.svymean(0.1)
-t3.show
+tsrs.svymean(col("acres92")).show
+tsrs.svytotal(col("acres92")).show
 ```
 

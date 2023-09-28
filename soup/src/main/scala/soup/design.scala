@@ -20,7 +20,7 @@ object Design {
     }
     def svyratio(num: Column, den: Column): DataFrame = { 
       val y = summary(num)
-        .select("strata", "ybar", "fpc", "smpSize", "popSize")
+        .select("strata", "ybar", "fpc", "smpSize")
       val x = summary(den)
         .select(col("strata"), col("ybar").alias("xbar"))
       val xydat = y.join(x, List("strata"), "inner")
@@ -35,8 +35,7 @@ object Design {
           first("ratio").alias("yest"),
           first("xbar").alias("xbar"),
           first("fpc").alias("fpc"),
-          first("smpSize").alias("smpSize"),
-          first("popSize").alias("popSize")
+          first("smpSize").alias("smpSize")
         )
         .withColumn("term1", col("smpSize") * col("xbar") * col("xbar"))
         .withColumn("yvarFpc", col("fpc") * (col("resid") / col("term1")) )
