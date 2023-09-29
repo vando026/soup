@@ -1,6 +1,6 @@
 package conviva.soup
 
-class SRSDesignSuite2 extends munit.FunSuite {
+class SRSDesignSuite extends munit.FunSuite {
 
   import org.apache.spark.sql.{SparkSession, DataFrame, Column}
   import org.apache.spark.sql.functions._
@@ -20,15 +20,12 @@ class SRSDesignSuite2 extends munit.FunSuite {
       .withColumn("lt200k", when(col("acres92") < 2e5, 1).otherwise(0))
       .withColumn("N", lit(3078.0))
 
+    val regionCode: Column = typedLit(Map("NE" -> 220.0, "NC" -> 1054.0, "S" -> 1382.0, "W" -> 422.0))
     val agstrat = spark.read
       .option("inferSchema", "true")
       .option("header", "true")
       .csv(s"$path/agstrat.csv")
-      .withColumn("N", 
-        when(col("region") === "NE", 220.0)
-        .when(col("region") === "NC", 1054.0)
-        .when(col("region") === "S", 1382.0)
-        .when(col("region") === "W", 422.0))
+      .withColumn("N", regionCode(col("region"))) 
 
     test("Agsrs props should be expected") {
       val srs = SRS(agsrs, popSize = col("N"))
@@ -68,25 +65,25 @@ class SRSDesignSuite2 extends munit.FunSuite {
       val t1 = dsrs.svymean(col("acres92"))
       // val t0 = dsrs.svytotal()
       assertEquals(
-        srs.where(col("strata") === "NE")
+        srs.where(col("region") === "NE")
         .select(round(col("ybar"), 1)).first.getDouble(0), 97629.8)
       assertEquals(
-        srs.where(col("strata") === "NC")
+        srs.where(col("region") === "NC")
         .select(round(col("ybar"), 1)).first.getDouble(0), 300504.2)
       assertEquals(
-        srs.where(col("strata") === "W")
+        srs.where(col("region") === "W")
         .select(round(col("yvar"))).first.getDouble(0), 396185950266.0)
       assertEquals(
-        t1.where(col("strata") === "NE")
+        t1.where(col("region") === "NE")
         .select(round(col("yest"), 1)).first.getDouble(0), 97629.8)
       assertEquals(
-        t1.where(col("strata") === "W")
+        t1.where(col("region") === "W")
         .select(round(col("yest"), 1)).first.getDouble(0), 662295.5)
       assertEquals(
-        t1.where(col("strata") === "NE")
+        t1.where(col("region") === "NE")
         .select(round(col("yse"), 1)).first.getDouble(0), 18149.5)
       assertEquals(
-        t1.where(col("strata") === "S")
+        t1.where(col("region") === "S")
         .select(round(col("yse"), 1)).first.getDouble(0), 18925.4)
     }
 
@@ -98,4 +95,73 @@ class SRSDesignSuite2 extends munit.FunSuite {
       assertEquals(t1.select(round(col("yse"), 6)).first.getDouble(0), 0.005750)
     }
 
+    test("Override default computation with user weights") {
+      val wts: Column = typedLit(
+        Map("NE" -> 2.0, "NC" -> 1.0, "S" -> 9.0, "W" -> 7.0))
+      val wcol: Column = wts(col("region"))
+      val srs = SRS(agstrat, popSize = col("N"), weights = wcol, strata = col("region"))
+      val srs2 = SRS(agstrat, popSize = col("N"), weights = lit(2.0))
+      val srs3 = SRS(agstrat, popSize = col("N"), weights = lit(2.0), strata = col("region"))
+      // val srs4 = SRS(agstrat, popSize = col("N"), weights = wcol))
+      val t1 = srs.summary(col("acres92"))
+      val t2 = srs2.summary(col("acres92"))
+      val t3 = srs3.summary(col("acres92"))
+      assertEquals(t1.where(col("region") === "NE").select("weight").first.getDouble(0), 2.0)
+      assertEquals(t1.where(col("region") === "W").select("weight").first.getDouble(0), 7.0)
+      assertEquals(t2.select("weight").first.getDouble(0), 2.0)
+      assertEquals(t3.where(col("region") === "W").select("weight").first.getDouble(0), 2.0)
+      assertEquals(t3.where(col("region") === "NE").select("weight").first.getDouble(0), 2.0)
+    }
+
 }
+/*
+    val wrecode: Column = typedLit(Map("NE" -> 1000/220.0, "NC" -> 4000/1054.0, "S" -> 2000/1382.0, "W" -> 600/422.0))
+    val wcol: Column = wrecode(col("region"))
+    val srs = SRS(agstrat, popSize = col("N"), weights = wcol, strata = col("region"))
+
+   val popSize = col("N")
+   val strata = col("region")
+    val weights = wcol
+    val strata_ = Option(strata).getOrElse(lit(1))
+    val weight_ = Option(weights).getOrElse(col("popSize") / col("smpSize"))
+    val fpc = lit(1) - (lit(1) / weight_)
+    //
+
+    val y = col("acres92")
+      val tt = agstrat
+        .groupBy(strata_).agg(
+          mean(y).alias("ybar"),
+          sum(y).cast("double").alias("ysum"),
+          variance(y).alias("yvar"),
+          count(lit(1)).cast("double").alias("smpSize"),
+          first(popSize).alias("popSize")
+        )
+      .withColumn("fpc", fpc)
+      .withColumn("weight", weight_)
+        .drop("1")
+        
+        val num = col("acres92")
+        val den = col("acres87")
+      val y = srs.summary(num)
+        .select(strata_, col("ybar"), col("fpc"), col("smpSize"))
+      val x = srs.summary(den)
+        .select(strata_, col("ybar").alias("xbar"))
+      val byVar = y.columns.intersect(x.columns).toList
+      val xydat = y.join(x, byVar, "inner")
+        .withColumn("ratio", col("ybar") / col("xbar"))
+      val sdat = srs.dat.select(strata_, num, den)
+        .join(xydat, byVar, "left")
+        .withColumn("residuals", (num - (col("ratio") * den)))
+      //
+      val ratioDat = sdat.groupBy(strata_).agg(
+          variance(col("residuals")).alias("resid"),
+          first("ratio").alias("yest"),
+          first("xbar").alias("xbar"),
+          first("fpc").alias("fpc"),
+          first("smpSize").alias("smpSize")
+        )
+        .withColumn("term1", col("smpSize") * col("xbar") * col("xbar"))
+        .withColumn("yvarFpc", col("fpc") * (col("resid") / col("term1")) )
+        getEst(ratioDat)
+    }
+*/

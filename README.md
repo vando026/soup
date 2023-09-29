@@ -42,8 +42,8 @@ parameter:
 
 ```scala mdoc
 val tsrs = SRS(agstrat, popSize = col("N"), strata = col("region"))
-tsrs.svymean(col("acres92")).show
-tsrs.svytotal(col("acres92")).show
+tsrs.svymean(col("acres92"))
+tsrs.svytotal(col("acres92"))
 ```
 
 Please see the https://github.com/Conviva-Internal/soup/wiki/1-Simple-random-sample page for more info. 
@@ -51,7 +51,7 @@ Please see the https://github.com/Conviva-Internal/soup/wiki/1-Simple-random-sam
 
 ### Stratified sampling designs
 
-For a stratified sampling design, use the `STRS` class, which requires a `DataFrame`, a `Column` for the sampling weights, and a `Column` for the strata. As before, the estimated  means and totals by group are obtained using the `svymeans` and `svytotal` methods:
+For a stratified sampling design, use the `STRS` class, which requires a `DataFrame`, a `Column` for the sampling weights, and a `Column` for the strata. As before, the estimated  means and totals by group are obtained using the `svymean` and `svytotal` methods:
 
 ```scala mdoc
 val dstr = STRS(strdat, popSize = col("N"), strata = col("region"))

@@ -20,17 +20,17 @@ object Design {
     }
     def svyratio(num: Column, den: Column): DataFrame = { 
       val y = summary(num)
-        .select("strata", "ybar", "fpc", "smpSize")
+        .select(strata_, col("ybar"), col("fpc"), col("smpSize"))
       val x = summary(den)
-        .select(col("strata"), col("ybar").alias("xbar"))
-      val xydat = y.join(x, List("strata"), "inner")
+        .select(strata_, col("ybar").alias("xbar"))
+      val byVar = y.columns.intersect(x.columns).toList
+      val xydat = y.join(x, byVar, "inner")
         .withColumn("ratio", col("ybar") / col("xbar"))
-      val sdat = dat
-        .withColumn("strata", strata_)
-        .join(xydat, List("strata"), "left")
+      val sdat = dat.select(strata_, num, den)
+        .join(xydat, byVar, "left")
         .withColumn("residuals", (num - (col("ratio") * den)))
       //
-      val ratioDat = sdat.groupBy("strata").agg(
+      val ratioDat = sdat.groupBy(strata_).agg(
           variance(col("residuals")).alias("resid"),
           first("ratio").alias("yest"),
           first("xbar").alias("xbar"),

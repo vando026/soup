@@ -83,15 +83,13 @@ To estimate means (proportions) or totals by strata, pass an argument to the
 region. 
 
 ```scala mdoc 
+val regionCode: Column = typedLit(
+    Map("NE" -> 220.0, "NC" -> 1054.0, "S" -> 1382.0, "W" -> 422.0))
 val agstrat = spark.read
   .option("inferSchema", "true")
   .option("header", "true")
   .csv(s"$path/agstrat.csv")
-  .withColumn("N", 
-    when(col("region") === "NE", 220.0)
-    .when(col("region") === "NC", 1054.0)
-    .when(col("region") === "S", 1382.0)
-    .when(col("region") === "W", 422.0))
+  .withColumn("N", regionCode(col("region")))
 ```
 
 Now pass the argument to `strata`:
@@ -105,5 +103,13 @@ And call `svymean` or `svytotal`:
 ```scala mdoc
 tsrs.svymean(col("acres92")).show
 tsrs.svytotal(col("acres92")).show
+```
+
+Let's say we want to override the default weights, computed as N/n, with
+something else. We can do this by passing the new weights as a `Column` to the
+`weights` parameter. 
+
+```scala mdoc
+val tsrs2 = SRS(agstrat, popSize = col("N"), strata = col("region"))
 ```
 

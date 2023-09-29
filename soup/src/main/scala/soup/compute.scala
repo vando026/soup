@@ -19,19 +19,21 @@ object Stats {
     val strata_ = Option(strata).getOrElse(lit(1))
     val weight_ = Option(weights).getOrElse(col("popSize") / col("smpSize"))
     val fpc = lit(1) - (lit(1) / weight_)
+
     //
     def summary(y: Column): DataFrame = {
-      dat
-        .withColumn("strata", strata_)
-        .groupBy("strata").agg(
+      dat.select(strata_, popSize, y)
+        .groupBy(strata_)
+        .agg(
           mean(y).alias("ybar"),
           sum(y).cast("double").alias("ysum"),
           variance(y).alias("yvar"),
           count(lit(1)).cast("double").alias("smpSize"),
           first(popSize).alias("popSize")
         )
-      .withColumn("fpc", fpc)
-      .withColumn("weight", weight_)
+        .withColumn("fpc", fpc)
+        .withColumn("weight", weight_)
+        .drop("1")
     }
     //
     def calcDf(): Column = col("smpSize") - lit(1)
