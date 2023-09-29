@@ -20,7 +20,7 @@ To estimate the mean, use the `svymean` method:
 val ac92mean = srs.svymean(y = col("acres92"))
 ```
 
-The `svymean` method works for proportions:
+To estimate a proportions, use the `svymean` method:
 
 ```scala mdoc
 val ac92prop = srs.svymean(y = col("lt200k"))
