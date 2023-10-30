@@ -49,7 +49,7 @@ size (`popSize`). For this dataset, the sampling weight = 3078/300. You can
 override this weight with your own custom weight.
 
 ```scala mdoc
-val srs = SRS(agdat, popSize = col("N"), weights = lit(3078/300))
+val srs = SRS(agdat, popSize = col("N"), weights = lit(3078/300.0))
 ```
 A finite population correction (FPC) factor is also calculated. For confidence
 intervals, the default alpha value is 0.05, which you can change with the
@@ -121,5 +121,5 @@ val wts: Column = typedLit(
 Map("NE" -> 2.0, "NC" -> 1.0, "S" -> 9.0, "W" -> 7.0))
 val wcol: Column = wts(col("region"))
 val tsrs2 = SRS(agdat, popSize = col("N"), weights = wcol, strata = col("region"))
-tsrs2.summary(y = col("acres92"))
+tsrs2.summary(y = col("acres92")).show
 ```

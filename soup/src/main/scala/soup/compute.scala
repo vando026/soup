@@ -18,7 +18,7 @@ object Stats {
     })
     val strata_ = Option(strata).getOrElse(lit(1))
     val weight_ = Option(weights).getOrElse(col("popSize") / col("smpSize"))
-    val fpc = lit(1) - (lit(1) / weight_)
+    val fpc = lit(1) - weight_ 
 
     //
     def summary(y: Column): DataFrame = {
