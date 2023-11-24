@@ -6,7 +6,7 @@ object Design {
   import org.apache.spark.sql.functions.{variance, pow, lit, col, sum, mean, first}
   import conviva.soup.Stats._
 
-  case class SRS(dat: DataFrame, popSize: Column, weights: Column = null, 
+  case class SRS(dat: DataFrame, popSize: Column = null, weights: Column = null, 
       strata: Column = null, alpha: Double = 0.05 ) extends Compute { 
     def svymean(y: Column): DataFrame = { 
       val dat = summary(y)

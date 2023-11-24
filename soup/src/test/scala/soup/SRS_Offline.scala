@@ -34,9 +34,10 @@ class SRSDesignSuite extends munit.FunSuite {
       assertEquals(t1.select(round(col("yse"), 4)).first.getDouble(0), 0.0275)
       assertEquals(t1.select(round(col("lb"), 3)).first.getDouble(0), 0.456)
       assertEquals(t1.select(round(col("ub"), 3)).first.getDouble(0), 0.564)
-      val srs1 = SRS(agsrs, popSize = col("N"), weights = lit(3078.0 / 300))
+      // val agsrs1 = agsrs.withColumn("weights", lit(3078.0/300))
+      val srs1 = SRS(agsrs, weights = lit(3078.0/300))
       val t2 = srs1.svymean(y = col("lt200k"))
-      assertEquals(t2.select("yest").first.getDouble(0), 0.51)
+      assertEquals(t2.select(round(col("yest"), 3)).first.getDouble(0), 0.51)
       assertEquals(t2.select(round(col("yse"), 4)).first.getDouble(0), 0.0275)
       assertEquals(t2.select(round(col("lb"), 3)).first.getDouble(0), 0.456)
     }
@@ -95,13 +96,13 @@ class SRSDesignSuite extends munit.FunSuite {
       assertEquals(t1.select(round(col("yse"), 6)).first.getDouble(0), 0.005750)
     }
 
-    test("Override default computation with user weights") {
+    test("agstrat using weights should be expected") {
       val wts: Column = typedLit(
         Map("NE" -> 2.0, "NC" -> 1.0, "S" -> 9.0, "W" -> 7.0))
       val wcol: Column = wts(col("region"))
-      val srs = SRS(agstrat, popSize = col("N"), weights = wcol, strata = col("region"))
-      val srs2 = SRS(agstrat, popSize = col("N"), weights = lit(2.0))
-      val srs3 = SRS(agstrat, popSize = col("N"), weights = lit(2.0), strata = col("region"))
+      val srs = SRS(agstrat, weights = wcol, strata = col("region"))
+      val srs2 = SRS(agstrat, weights = lit(2.0))
+      val srs3 = SRS(agstrat, weights = lit(2.0), strata = col("region"))
       // val srs4 = SRS(agstrat, popSize = col("N"), weights = wcol))
       val t1 = srs.summary(col("acres92"))
       val t2 = srs2.summary(col("acres92"))

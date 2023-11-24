@@ -13,26 +13,31 @@ object Stats {
     val strata: Column
     val alpha: Double
     //
+    if (Option(weights) == None && Option(popSize) == None) 
+      throw new RuntimeException("Specify either weights OR popSize")
+    if (Option(weights) == Some(weights) & Option(popSize) == Some(popSize)) 
+      throw new RuntimeException("Cannot specify both weights AND popSize")
+    val strata_ = Option(strata).getOrElse(lit(1))
+    val popSizeCompute: Column = Option(popSize) match {
+      case Some(popSize) => first(popSize).alias("popSize")
+      case None => sum(weights).alias("popSize")
+    }
+
     def tstat(alpha: Double) = udf((col: Double) => {
       new TDistribution(col).inverseCumulativeProbability(1 - (alpha / 2))
     })
-    val strata_ = Option(strata).getOrElse(lit(1))
-    val weight_ = Option(weights).getOrElse(col("popSize") / col("smpSize"))
-    val fpc = lit(1) - weight_ 
-
     //
     def summary(y: Column): DataFrame = {
-      dat.select(strata_, popSize, y)
-        .groupBy(strata_)
+      dat.groupBy(strata_)
         .agg(
           mean(y).alias("ybar"),
           sum(y).cast("double").alias("ysum"),
           variance(y).alias("yvar"),
-          count(lit(1)).cast("double").alias("smpSize"),
-          first(popSize).alias("popSize")
+          count(lit(1)).alias("smpSize"),
+          popSizeCompute
         )
-        .withColumn("fpc", fpc)
-        .withColumn("weight", weight_)
+        .withColumn("fpc", lit(1) - (col("smpSize") / col("popSize")))
+        .withColumn("weight", col("popSize") / col("smpSize"))
         .drop("1")
     }
     //
