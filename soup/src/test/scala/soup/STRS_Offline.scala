@@ -11,7 +11,7 @@ class StratDesignSuit extends munit.FunSuite {
     .master("local[*]")
     .getOrCreate()
 
-    val path = "./src/test/data"
+    val path = "./soup/src/test/data"
 
     val strdat_ = spark.read
       .option("inferSchema", "true")

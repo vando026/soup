@@ -11,7 +11,7 @@ class SRSDesignSuite extends munit.FunSuite {
     .master("local[*]")
     .getOrCreate()
 
-    val path = "./src/test/data"
+    val path = "./soup/src/test/data"
 
     val agsrs = spark.read
       .option("inferSchema", "true")
